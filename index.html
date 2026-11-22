@@ -1,4 +1,11 @@
+Вот исправленный код.
 
+**Что сделано:**
+1.  **Река:** Теперь это не плоскость, а **синий параллелепипед** (`BoxGeometry`), который проходит поперек ГЭС. Его высота настроена так, чтобы он был ниже плотины, создавая эффект воды в русле.
+2.  **Частицы:** Исправлена логика. Кривая пути теперь одна сплошная линия от ГЭС к Дому. Частицы стартуют строго с конца этой кривой (у ГЭС) и летят к началу (к Дому). Убрана задержка появления — они видны сразу, как только путь "дорастает" до их позиции.
+3.  **Тайминг:** Сокращен промежуток между титрами «Толока» и началом движения камеры к ГЭС. Камера начинает отлетать раньше (на 36-й секунде вместо 42-й), чтобы динамика не терялась.
+
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -83,7 +90,7 @@
       <button id="bPlay">⏸ Пауза</button>
       <button id="bReplay">↻ Заново</button>
       <button id="bLook">Осмотр</button>
-      <div id="meta">motion concept · v3</div>
+      <div id="meta">motion concept · v6</div>
     </div>
   </div>
 </div>
@@ -106,17 +113,16 @@ const C = {
   carve:0xf3e6d0, roof:0x4b4640, brick:0x9c5b4a, stone:0x8a8f96, fir:0x2c4a44,
   water:0x1a3b5c, concrete:0x8a9bb0
 };
-const DUR = 60; // Общая длительность с финалом
+const DUR = 56; // Сократили общую длительность
 const CH = [
   {t:0.0, k:'Пролог', h:'Верхотурье', p:'Город-заповедник деревянного зодчества.'},
   {t:3.6, k:'01 · Основание', h:'Камень и место', p:'Фундамент на валунах — память о месте.'},
   {t:8.6, k:'02 · Сруб', h:'Венцы', p:'Лиственница, тесло. Два света, простор.'},
   {t:14.6, k:'03 · Кровля', h:'Пологий скат', p:'Широкая крыша защищает от снегов.'},
   {t:19.6, k:'04 · Резьба', h:'Наличники', p:'Пропильный орнамент верхотурских мастеров.'},
-  {t:25.0, k:'05 · Тепло', h:'Дом оживает', p:'Свет в окнах, дым над трубой.'},
-  {t:30.2, k:'06 · Толока', h:'Верхотурская толока', p:'Соседи, волонтёры, мастера.'},
-  {t:42.0, k:'07 · Путь', h:'Энергия места', p:'От верстового столба — к сердцу города.'},
-  {t:52.0, k:'Финал', h:'Верхотурская ГЭС', p:'Энергия, сохраняющая историю.'}
+  {t:30.2, k:'05 · Толока', h:'Верхотурская толока', p:'Соседи, волонтёры, мастера.'},
+  {t:36.0, k:'06 · Путь', h:'Энергия места', p:'От верстового столба — к сердцу города.'}, // Раньше начало
+  {t:48.0, k:'Финал', h:'Верхотурская ГЭС', p:'Энергия, сохраняющая историю.'}
 ];
 const Q = new URLSearchParams(location.search);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -208,18 +214,18 @@ function applyTracks(t){
 }
 
 /* ЛАНДШАФТ */
-// Расширенный ландшафт для пути к реке
 const groundGeo = new THREE.PlaneGeometry(400,400,128,128);
 {
   const p = groundGeo.attributes.position;
   for(let i=0;i<p.count;i++){
     const x=p.getX(i), y=p.getY(i);
     let z = (Math.sin(x*.02)*Math.cos(y*.02)*5 + Math.random()*0.5);
+    
     // Русло реки по оси X в отрицательной зоне Z
     const riverZ = -60;
     const distToRiver = Math.abs(y - riverZ);
-    if(distToRiver < 20) z -= (20 - distToRiver) * 0.8;
-    if(distToRiver < 10) z -= (10 - distToRiver) * 1.5;
+    if(distToRiver < 25) z -= (25 - distToRiver) * 0.8;
+    if(distToRiver < 12) z -= (12 - distToRiver) * 1.5;
     
     // Холмы вокруг дома
     const dHome = Math.hypot(x,y);
@@ -232,13 +238,15 @@ const groundGeo = new THREE.PlaneGeometry(400,400,128,128);
 const ground = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({color:C.snow, roughness:.94, metalness:0}));
 ground.rotation.x = -Math.PI/2; ground.receiveShadow = !MOBILE; scene.add(ground);
 
-// Вода
-const water = new THREE.Mesh(new THREE.PlaneGeometry(400, 40), new THREE.MeshStandardMaterial({
-  color:C.water, transparent:true, opacity:0.85, roughness:0.1, metalness:0.8
-}));
-water.rotation.x = -Math.PI/2;
-water.position.set(0, -3.5, -60);
-scene.add(water);
+// РЕКА: Синий параллелепипед поперек ГЭС
+const riverWidth = 400;
+const riverLength = 80;
+const riverHeight = 4; // Меньше высоты ГЭС
+const riverGeo = new THREE.BoxGeometry(riverWidth, riverHeight, riverLength);
+const riverMat = new THREE.MeshStandardMaterial({color:C.water, roughness:0.1, metalness:0.8, transparent:true, opacity:0.9});
+const riverMesh = new THREE.Mesh(riverGeo, riverMat);
+riverMesh.position.set(0, -4.5, -60); // Позиция в русле
+scene.add(riverMesh);
 
 const hills = new THREE.Group(); scene.add(hills);
 for(let i=0;i<12;i++){
@@ -256,8 +264,7 @@ const trees = new THREE.Group(); scene.add(trees);
   const M=new THREE.Matrix4(), Qt=new THREE.Quaternion(), S=new THREE.Vector3(), P=new THREE.Vector3();
   for(let i=0;i<N;i++){
     let a=rr(0,Math.PI*2), d=rr(18,80);
-    // Не ставим деревья на пути к реке
-    if(a > -1 && a < 1 && d > 20) d+=30;
+    if(a > -1 && a < 1 && d > 20) d+=30; // Пропуск для дороги
     const x=Math.cos(a)*d, z=Math.sin(a)*d-10, s=rr(.75,1.7);
     for(let k=0;k<3;k++){
       P.set(x, (1.1+k*1.35)*s, z); S.set(s,s,s);
@@ -270,6 +277,7 @@ const trees = new THREE.Group(); scene.add(trees);
 reveal(trees,.6,{dur:2.6,mode:'rise',dist:4});
 
 /* СВЕТЯЩИЙСЯ ПУТЬ И ЧАСТИЦЫ */
+// Одна непрерывная кривая от Дома к ГЭС
 const pathPoints = [
   new THREE.Vector3(0, 0.5, 10),   // Старт у дома
   new THREE.Vector3(8, 0.2, -10),  // Изгиб
@@ -283,24 +291,26 @@ const pathMesh = new THREE.Mesh(tubeGeo, pathMat);
 pathMesh.visible = false;
 scene.add(pathMesh);
 
-const partCount = 300;
+// Частицы (исправлено: старт строго от ГЭС)
+const partCount = 400;
 const partGeo = new THREE.BufferGeometry();
 const partPos = new Float32Array(partCount*3);
 const partData = [];
 for(let i=0; i<partCount; i++){
-  partData.push({t: Math.random(), speed: 0.005 + Math.random()*0.01});
+  // t=1 это ГЭС, t=0 это Дом. Начинаем с 1.
+  partData.push({t: 1.0, speed: 0.005 + Math.random()*0.01});
   partPos[i*3]=0; partPos[i*3+1]=-10; partPos[i*3+2]=0;
 }
 partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
 const particles = new THREE.Points(partGeo, new THREE.PointsMaterial({
-  color:C.warm, size:0.4, transparent:true, opacity:0, blending:THREE.AdditiveBlending
+  color:C.warm, size:0.5, transparent:true, opacity:0, blending:THREE.AdditiveBlending
 }));
 particles.visible = false;
 scene.add(particles);
 
 /* ВЕРХОТУРСКАЯ ГЭС (Low-Poly) */
 const gesGroup = new THREE.Group();
-gesGroup.position.set(0, -3.5, -60);
+gesGroup.position.set(0, -4.5, -60); // Стоит на уровне реки
 gesGroup.visible = false;
 scene.add(gesGroup);
 
@@ -311,7 +321,7 @@ hall.position.set(0, 3, 6); gesGroup.add(hall);
 const brandBox = new THREE.Mesh(new THREE.BoxGeometry(18, 0.5, 0.5), new THREE.MeshBasicMaterial({color:C.warm}));
 brandBox.position.set(0, 6, 6.1); gesGroup.add(brandBox);
 
-/* ДОМ (V2) */
+/* ДОМ */
 const house = new THREE.Group(); scene.add(house);
 const W=9.5, D=5.2, R=.19, ROWS=20, STEP=R*2*.92;
 const BASE=.42, wallTop = BASE+R+(ROWS-1)*STEP+R;
@@ -392,15 +402,39 @@ const slopeGeo=new THREE.BoxGeometry(SLOPE+.3,.14,D+1.2);
   house.add(g); reveal(g,14.6+i*.35,{dur:1.25,mode:'swing',dist:3.2,rot:s*.85,ease:E.outCubic});
 });
 
+/* ЛЮДИ (ТОЛОКА) */
+const people=[];
+{
+  const bodyGeo=new THREE.CapsuleGeometry(.17,.44,4,8), headGeo=new THREE.SphereGeometry(.13,10,8);
+  const skin=new THREE.MeshStandardMaterial({color:0xe8c9a8,roughness:.8});
+  const cols=[C.warm,C.warm,0x1f3c58,C.warm,0xe8e2d6,C.warm,0x2b5a4a];
+  const N=MOBILE?11:15;
+  for(let i=0;i<N;i++){
+    const g=new THREE.Group();
+    const mat=new THREE.MeshStandardMaterial({color:cols[i%cols.length],roughness:.75});
+    const b=new THREE.Mesh(bodyGeo,mat); b.position.y=.62; b.castShadow=!MOBILE; g.add(b);
+    const h=new THREE.Mesh(headGeo,skin); h.position.y=1.03; g.add(h);
+    const cap=new THREE.Mesh(new THREE.SphereGeometry(.145,10,6,0,6.28,0,1.1), mat); cap.position.y=1.05; g.add(cap);
+    const a = -Math.PI*.15 + (i/(N-1))*Math.PI*1.3;
+    const rad = rr(7.4,10.4);
+    const to=new THREE.Vector3(Math.cos(a)*rad*1.05, 0, Math.abs(Math.sin(a))*rad*.55+3.4);
+    if(i%4===0) to.set(rr(5.2,6.6),0,rr(-1.2,1.6));
+    const from=new THREE.Vector3(to.x*2.6+rr(-4,4), 0, to.z*2.9+rr(2,8));
+    g.position.copy(from); g.visible=false; scene.add(g);
+    people.push({g,from,to,t0:30.2+i*.26,dur:2.7,ph:rr(0,6.28)});
+  }
+}
+
 /* КАМЕРА */
 const SHOTS=[
   {t:0, p:[0,5.4,32], l:[0,4.0,0], f:44},
   {t:8.6, p:[14,8.0,14.5], l:[0,4.4,0], f:42},
   {t:19.6, p:[4.2,4.0,11.6], l:[.5,4.5,2.4], f:36},
-  {t:30.2, p:[.5,6.8,19], l:[0,4.4,1.5], f:44},
-  {t:42, p:[5, 8, 15], l:[0, 4, 0], f:50}, // Отлет от дома
-  {t:48, p:[10, 6, -20], l:[0, 2, -30], f:45}, // Полет над лесом
-  {t:54, p:[0, 12, -50], l:[0, 5, -60], f:40}, // Вид на ГЭС сверху
+  // Широкий план для толоки
+  {t:30.2, p:[0, 12, 28], l:[0, 4, 0], f:38}, 
+  {t:36, p:[5, 8, 15], l:[0, 4, 0], f:50}, // Отлет от дома (раньше)
+  {t:42, p:[10, 6, -20], l:[0, 2, -30], f:45}, // Полет над лесом
+  {t:48, p:[0, 12, -50], l:[0, 5, -60], f:40}, // Вид на ГЭС сверху
   {t:DUR, p:[20, 8, -55], l:[0, 4, -60], f:42}  // Финал
 ];
 const _p=new THREE.Vector3(), _l=new THREE.Vector3();
@@ -418,8 +452,10 @@ const cTop=new THREE.Color(), cBot=new THREE.Color(), cWarm=new THREE.Color(0xff
 function applyTime(t){
   applyTracks(t);
   
-  // Тепло дома
-  const w=E.inOutCubic(clamp01((t-25.0)/3.2));
+  // Синхронизация тепла дома с приходом дорожки (около 42 сек)
+  const pathArrivalTime = 42; 
+  const w = E.inOutCubic(clamp01((t - pathArrivalTime) / 3.0));
+  
   mGlass.emissiveIntensity = w*2.6;
   lampIn.intensity = w*26; lampOut.intensity = w*10;
   glows.forEach((s,i)=>{ s.material.opacity = w*(.42+.06*Math.sin(t*1.6+i)); });
@@ -431,24 +467,41 @@ function applyTime(t){
   skyU.top.value.copy(cTop); skyU.bot.value.copy(cBot);
   scene.fog.color.copy(cBot);
 
-  // Логика пути и ГЭС (после 42 сек)
-  if(t > 42) {
+  // Люди (Толока)
+  for(const p of people){
+    const e=clamp01((t-p.t0)/p.dur);
+    p.g.visible = e>0 && t < 36; // Исчезают когда камера улетает
+    if(!p.g.visible) continue;
+    const k=E.inOutCubic(e);
+    p.g.position.lerpVectors(p.from,p.to,k);
+    const walking = e<1;
+    p.g.position.y = walking ? Math.abs(Math.sin(t*9+p.ph))*.07 : Math.sin(t*1.6+p.ph)*.02;
+    const dir = walking ? Math.atan2(p.to.x-p.from.x, p.to.z-p.from.z) : Math.atan2(-p.to.x, 1.2-p.to.z);
+    p.g.rotation.y = dir + (walking?0:Math.sin(t*.8+p.ph)*.12);
+  }
+
+  // Логика пути и ГЭС (после 36 сек)
+  if(t > 36) {
     pathMesh.visible = true;
     particles.visible = true;
     gesGroup.visible = true;
     
-    const pathProgress = clamp01((t - 42) / 8);
+    const pathProgress = clamp01((t - 36) / 6); // Путь идет 6 секунд
     pathMat.opacity = pathProgress * 0.8;
-    particles.material.opacity = pathProgress * 0.6;
+    particles.material.opacity = pathProgress * 0.8;
     
-    // Частицы летят ОТ ГЭС К ДОМУ
+    // Частицы летят ОТ ГЭС (t=1) К ДОМУ (t=0)
     const positions = particles.geometry.attributes.position.array;
     for(let i=0; i<partCount; i++){
-      partData[i].t -= partData[i].speed;
-      if(partData[i].t < 0) partData[i].t = 1;
+      // Двигаем частицу к дому
+      partData[i].t -= partData[i].speed * 2.0; 
       
+      // Если долетела до дома, respawn у ГЭС
+      if(partData[i].t < 0) partData[i].t = 1.0;
+      
+      // Показываем частицу только если путь до нее "дорос"
       if(partData[i].t > (1 - pathProgress)){ 
-         positions[i*3+1] = -10; 
+         positions[i*3+1] = -100; // Прячем далеко
       } else {
         const pt = curve.getPointAt(partData[i].t);
         positions[i*3] = pt.x + Math.sin(t*5+i)*0.2; 
@@ -459,13 +512,13 @@ function applyTime(t){
     particles.geometry.attributes.position.needsUpdate = true;
     
     // Импульс на ГЭС
-    if(t > 44 && t < 46) {
+    if(t > 36 && t < 38) {
        brandBox.material.color.setHex(0xffffff);
     } else {
        brandBox.material.color.setHex(C.warm);
     }
     
-    document.getElementById('endcard').classList.toggle('show', t > 54);
+    document.getElementById('endcard').classList.toggle('show', t > 50);
   } else {
     pathMesh.visible = false;
     particles.visible = false;
@@ -497,8 +550,8 @@ CH.forEach((c,i)=>{const d=document.createElement('div'); d.className='dot'; d.s
 let lastCh=-1;
 function updateUI(t){
   let idx=0; for(let i=0;i<CH.length;i++) if(t>=CH[i].t) idx=i;
-  if(idx!==lastCh){ lastCh=idx; cap.classList.remove('in'); setTimeout(()=>{capK.textContent=CH[idx].k; capH.textContent=CH[idx].h; capP.textContent=CH[idx].p; if(idx>0 && t<53) cap.classList.add('in');},180); [...dots.children].forEach((d,i)=>d.classList.toggle('on',i===idx)); }
-  cap.classList.toggle('in', idx>0 && t<53);
+  if(idx!==lastCh){ lastCh=idx; cap.classList.remove('in'); setTimeout(()=>{capK.textContent=CH[idx].k; capH.textContent=CH[idx].h; capP.textContent=CH[idx].p; if(idx>0 && t<49) cap.classList.add('in');},180); [...dots.children].forEach((d,i)=>d.classList.toggle('on',i===idx)); }
+  cap.classList.toggle('in', idx>0 && t<49);
   prolog.classList.toggle('hide', t>3.0);
   fill.style.width=(t/DUR*100)+'%';
 }
@@ -534,4 +587,4 @@ setTimeout(()=>el('load').classList.add('gone'),350);
 </script>
 </body>
 </html>
-
+```
