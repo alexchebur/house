@@ -235,29 +235,71 @@ const TEX = softTex();
    2. СИСТЕМА РАСКРЫТИЯ (stateless: всё считается от t)
    ═══════════════════════════════════════════════════════════════ */
 const tracks = [];
+
 function reveal(obj, t0, {dur=.9, ease=E.outCubic, mode='drop', dist=3, axis='y', rot=0}={}){
   obj.visible = false;
-  tracks.push({obj,t0,dur,ease,mode,dist,axis,rot,
-    p:obj.position.clone(), s:obj.scale.clone(), r:obj.rotation.clone()});
+  
+  // Подготовка материала для fade, если нужно
+  if (mode === 'fade') {
+    if (Array.isArray(obj.material)) {
+      obj.material.forEach(m => { m.transparent = true; m.needsUpdate = true; });
+    } else if (obj.material) {
+      obj.material.transparent = true;
+      obj.material.needsUpdate = true;
+    }
+  }
+
+  tracks.push({
+    obj, t0, dur, ease, mode, dist, axis, rot,
+    p: obj.position.clone(), 
+    s: obj.scale.clone(), 
+    r: obj.rotation.clone()
+  });
   return obj;
 }
+
 function applyTracks(t){
   for(const k of tracks){
-    const e = k.ease(clamp01((t-k.t0)/k.dur));
-    k.obj.visible = e > .001;
+    const progress = clamp01((t - k.t0) / k.dur);
+    const e = k.ease(progress);
+    
+    // Базовая видимость
+    k.obj.visible = e > 0.001;
     if(!k.obj.visible) continue;
-    const o=k.obj;
-    if(k.mode==='drop'||k.mode==='rise'){
-      o.position.copy(k.p); o.scale.copy(k.s); o.rotation.copy(k.r);
-      o.position[k.axis] = k.p[k.axis] + (k.mode==='drop'?1:-1)*k.dist*(1-e);
-    }else if(k.mode==='pop'){
-      o.position.copy(k.p); o.rotation.copy(k.r); o.scale.copy(k.s).multiplyScalar(e);
-    }else if(k.mode==='swing'){
-      o.position.copy(k.p); o.scale.copy(k.s); o.rotation.copy(k.r);
-      o.position.y = k.p.y + k.dist*(1-e); o.rotation.z = k.r.z + k.rot*(1-e);
-    }else if(k.mode==='fade'){
-      o.position.copy(k.p); o.scale.copy(k.s); o.rotation.copy(k.r);
-      o.material.opacity = e;
+
+    const o = k.obj;
+    
+    // Сброс трансформаций к исходным перед применением анимации
+    o.position.copy(k.p); 
+    o.scale.copy(k.s); 
+    o.rotation.copy(k.r);
+
+    if(k.mode === 'drop' || k.mode === 'rise'){
+      // Движение по оси
+      const dir = k.mode === 'drop' ? 1 : -1;
+      o.position[k.axis] = k.p[k.axis] + dir * k.dist * (1 - e);
+      
+    } else if(k.mode === 'pop'){
+      // Масштабирование от 0 до 1
+      // Защита от нулевого масштаба для некоторых геометрий
+      const scaleVal = Math.max(0.001, e); 
+      o.scale.set(k.s.x * scaleVal, k.s.y * scaleVal, k.s.z * scaleVal);
+      
+    } else if(k.mode === 'swing'){
+      // Комбинированное движение (подъем + поворот)
+      o.position.y = k.p.y + k.dist * (1 - e); 
+      o.rotation.z = k.r.z + k.rot * (1 - e);
+      
+    } else if(k.mode === 'fade'){
+      // Прозрачность
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of mats) {
+        if (m) {
+          m.opacity = e;
+          // Для корректного исчезновения теней и глубины
+          m.depthWrite = e > 0.5; 
+        }
+      }
     }
   }
 }
