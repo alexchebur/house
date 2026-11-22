@@ -74,7 +74,7 @@
 <div id="ui">
   <div id="brand"><div class="mark">Т+</div><div class="txt"><b>Т Плюс</b>свет · тепло</div></div>
   <div id="prolog"><div class="k">Свердловская область · Урал</div><h1>ВЕРХОТУРЬЕ</h1><p>Деревянный город, который держится на людях</p></div>
-  <div id="endcard"><h2>Верхотурская ГЭС</h2><div class="rule"></div><p>Энергия с историей</p></div>
+  <div id="endcard"><h2>Верхотурская ГЭС</h2><div class="rule"></div><p>Энергия, сохраняющая историю</p></div>
   <div id="caption"><div class="k"></div><h3></h3><p></p></div>
   <div id="hint">перетащите — осмотр · space — пауза</div>
   <div id="controls">
@@ -83,7 +83,7 @@
       <button id="bPlay">⏸ Пауза</button>
       <button id="bReplay">↻ Заново</button>
       <button id="bLook">Осмотр</button>
-      <div id="meta">motion concept · </div>
+      <div id="meta">motion concept · v1</div>
     </div>
   </div>
 </div>
@@ -106,16 +106,17 @@ const C = {
   carve:0xf3e6d0, roof:0x4b4640, brick:0x9c5b4a, stone:0x8a8f96, fir:0x2c4a44,
   water:0x1a3b5c, concrete:0x8a9bb0
 };
-const DUR = 56; // Сократили общую длительность
+const DUR = 56; 
 const CH = [
   {t:0.0, k:'Пролог', h:'Верхотурье', p:'Город-заповедник деревянного зодчества.'},
-  {t:3.6, k:'01 · Основание', h:'Камень и место', p:'Фундамент на валунах — корни из недр.'},
-  {t:8.6, k:'02 · Сруб', h:'Венцы', p:'Лиственница, тесло. Два света, простор.'},
-  {t:14.6, k:'03 · Кровля', h:'Пологий скат', p:'Широкая крыша защищает от снегов.'},
-  {t:19.6, k:'04 · Резьба', h:'Наличники', p:'Пропильный орнамент уральских зодчих.'},
-  {t:30.2, k:'05 · Толока', h:'Верхотурская толока', p:'Соседи, волонтёры, мастера.'},
-  {t:36.0, k:'06 · Путь', h:'Энергия места', p:'От верстового столба — к сердцу города.'}, // Раньше начало
-  {t:48.0, k:'Финал', h:'Верхотурская ГЭС', p:'Энергия с историей.'}
+  {t:3.6, k:'01 · Основание', h:'Камень и место', p:'Фундамент на валунах — память о месте.'},
+  {t:8.6, k:'02 · Сруб', h:'Венцы', p:'Кедр, лиственица, тесло. Два света, простор.'},
+  {t:14.6, k:'03 · Кровля', h:'Пологий скат', p:'Широкая крыша защищает от снега.'},
+  {t:19.6, k:'04 · Резьба', h:'Наличники', p:'Особый орнамент уральских зодчих.'},
+  {t:25.0, k:'05 · Тепло', h:'Дом оживает', p:'Свет в окнах, дым над трубой.'}, // Вернули оригинальный тайминг
+  {t:30.2, k:'06 · Толока', h:'Верхотурская толока', p:'Соседи, волонтёры, мастера.'},
+  {t:36.0, k:'07 · Путь', h:'Энергия места', p:'От верстового столба — к сердцу города.'},
+  {t:48.0, k:'Финал', h:'Верхотурская ГЭС', p:'Энергия, сохраняющая историю.'}
 ];
 const Q = new URLSearchParams(location.search);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -234,11 +235,11 @@ ground.rotation.x = -Math.PI/2; ground.receiveShadow = !MOBILE; scene.add(ground
 // РЕКА: Синий параллелепипед поперек ГЭС
 const riverWidth = 400;
 const riverLength = 80;
-const riverHeight = 4; // Меньше высоты ГЭС
+const riverHeight = 4; 
 const riverGeo = new THREE.BoxGeometry(riverWidth, riverHeight, riverLength);
 const riverMat = new THREE.MeshStandardMaterial({color:C.water, roughness:0.1, metalness:0.8, transparent:true, opacity:0.9});
 const riverMesh = new THREE.Mesh(riverGeo, riverMat);
-riverMesh.position.set(0, -4.5, -60); // Позиция в русле
+riverMesh.position.set(0, -4.5, -60); 
 scene.add(riverMesh);
 
 const hills = new THREE.Group(); scene.add(hills);
@@ -257,7 +258,7 @@ const trees = new THREE.Group(); scene.add(trees);
   const M=new THREE.Matrix4(), Qt=new THREE.Quaternion(), S=new THREE.Vector3(), P=new THREE.Vector3();
   for(let i=0;i<N;i++){
     let a=rr(0,Math.PI*2), d=rr(18,80);
-    if(a > -1 && a < 1 && d > 20) d+=30; // Пропуск для дороги
+    if(a > -1 && a < 1 && d > 20) d+=30; 
     const x=Math.cos(a)*d, z=Math.sin(a)*d-10, s=rr(.75,1.7);
     for(let k=0;k<3;k++){
       P.set(x, (1.1+k*1.35)*s, z); S.set(s,s,s);
@@ -270,12 +271,11 @@ const trees = new THREE.Group(); scene.add(trees);
 reveal(trees,.6,{dur:2.6,mode:'rise',dist:4});
 
 /* СВЕТЯЩИЙСЯ ПУТЬ И ЧАСТИЦЫ */
-// Одна непрерывная кривая от Дома к ГЭС
 const pathPoints = [
-  new THREE.Vector3(0, 0.5, 10),   // Старт у дома
-  new THREE.Vector3(8, 0.2, -10),  // Изгиб
-  new THREE.Vector3(-8, 0.2, -30), // Изгиб к реке
-  new THREE.Vector3(0, 0.5, -55)   // Финиш у ГЭС
+  new THREE.Vector3(0, 0.5, 10),   
+  new THREE.Vector3(8, 0.2, -10),  
+  new THREE.Vector3(-8, 0.2, -30), 
+  new THREE.Vector3(0, 0.5, -55)   
 ];
 const curve = new THREE.CatmullRomCurve3(pathPoints);
 const tubeGeo = new THREE.TubeGeometry(curve, 100, 0.15, 8, false);
@@ -284,13 +284,11 @@ const pathMesh = new THREE.Mesh(tubeGeo, pathMat);
 pathMesh.visible = false;
 scene.add(pathMesh);
 
-// Частицы (исправлено: старт строго от ГЭС)
 const partCount = 400;
 const partGeo = new THREE.BufferGeometry();
 const partPos = new Float32Array(partCount*3);
 const partData = [];
 for(let i=0; i<partCount; i++){
-  // t=1 это ГЭС, t=0 это Дом. Начинаем с 1.
   partData.push({t: 1.0, speed: 0.005 + Math.random()*0.01});
   partPos[i*3]=0; partPos[i*3+1]=-10; partPos[i*3+2]=0;
 }
@@ -301,9 +299,9 @@ const particles = new THREE.Points(partGeo, new THREE.PointsMaterial({
 particles.visible = false;
 scene.add(particles);
 
-/* ВЕРХОТУРСКАЯ ГЭС (Low-Poly) */
+/* ВЕРХОТУРСКАЯ ГЭС */
 const gesGroup = new THREE.Group();
-gesGroup.position.set(0, -4.5, -60); // Стоит на уровне реки
+gesGroup.position.set(0, -4.5, -60); 
 gesGroup.visible = false;
 scene.add(gesGroup);
 
@@ -330,14 +328,12 @@ const mSnow   = new THREE.MeshStandardMaterial({color:0xf2f7fc, roughness:.9});
 const mGlass  = new THREE.MeshStandardMaterial({color:0x141c26, roughness:.35, metalness:.1, emissive:0xffa64d, emissiveIntensity:0});
 const mStone  = new THREE.MeshStandardMaterial({color:C.stone, roughness:1, flatShading:true});
 
-// Фундамент
 [[-W/2+.3,-D/2+.3],[W/2-.3,-D/2+.3],[-W/2+.3,D/2-.3],[W/2-.3,D/2-.3]].forEach(([x,z],i)=>{
   const s=new THREE.Mesh(new THREE.IcosahedronGeometry(rr(.34,.46),0), mStone);
   s.position.set(x,.2,z); s.scale.y=.62; house.add(s);
   reveal(s, 3.6+i*.13, {dur:.85, mode:'drop', dist:4.5, ease:E.outBack});
 });
 
-// Сруб
 const logXGeo = new THREE.CylinderGeometry(R,R,W+.72,10,1);
 const logZGeo = new THREE.CylinderGeometry(R,R,D+.72,10,1);
 for(let r=0;r<ROWS;r++){
@@ -354,7 +350,6 @@ for(let r=0;r<ROWS;r++){
   }
 }
 
-// Окна
 const glows=[];
 function window_(w,h){
   const g=new THREE.Group();
@@ -385,7 +380,6 @@ function window_(w,h){
   g.visible=true;
 });
 
-// Крыша
 const slopeGeo=new THREE.BoxGeometry(SLOPE+.3,.14,D+1.2);
 [[1,-ANG],[-1,ANG]].forEach(([s,rot],i)=>{
   const g=new THREE.Group();
@@ -423,12 +417,11 @@ const SHOTS=[
   {t:0, p:[0,5.4,32], l:[0,4.0,0], f:44},
   {t:8.6, p:[14,8.0,14.5], l:[0,4.4,0], f:42},
   {t:19.6, p:[4.2,4.0,11.6], l:[.5,4.5,2.4], f:36},
-  // Широкий план для толоки
   {t:30.2, p:[0, 12, 28], l:[0, 4, 0], f:38}, 
-  {t:36, p:[5, 8, 15], l:[0, 4, 0], f:50}, // Отлет от дома (раньше)
-  {t:42, p:[10, 6, -20], l:[0, 2, -30], f:45}, // Полет над лесом
-  {t:48, p:[0, 12, -50], l:[0, 5, -60], f:40}, // Вид на ГЭС сверху
-  {t:DUR, p:[20, 8, -55], l:[0, 4, -60], f:42}  // Финал
+  {t:36, p:[5, 8, 15], l:[0, 4, 0], f:50}, 
+  {t:42, p:[10, 6, -20], l:[0, 2, -30], f:45}, 
+  {t:48, p:[0, 12, -50], l:[0, 5, -60], f:40}, 
+  {t:DUR, p:[20, 8, -55], l:[0, 4, -60], f:42}  
 ];
 const _p=new THREE.Vector3(), _l=new THREE.Vector3();
 function shot(t){
@@ -445,10 +438,9 @@ const cTop=new THREE.Color(), cBot=new THREE.Color(), cWarm=new THREE.Color(0xff
 function applyTime(t){
   applyTracks(t);
   
-  // Синхронизация тепла дома с приходом дорожки (около 42 сек)
-  const pathArrivalTime = 42; 
-  const w = E.inOutCubic(clamp01((t - pathArrivalTime) / 3.0));
-  
+  // ОСВЕЩЕНИЕ ДОМА (ВЕРНУЛИ ОРИГИНАЛЬНУЮ ЛОГИКУ)
+  // Тепло включается на 25-й секунде, независимо от дорожки
+  const w=E.inOutCubic(clamp01((t-25.0)/3.2));
   mGlass.emissiveIntensity = w*2.6;
   lampIn.intensity = w*26; lampOut.intensity = w*10;
   glows.forEach((s,i)=>{ s.material.opacity = w*(.42+.06*Math.sin(t*1.6+i)); });
@@ -463,7 +455,7 @@ function applyTime(t){
   // Люди (Толока)
   for(const p of people){
     const e=clamp01((t-p.t0)/p.dur);
-    p.g.visible = e>0 && t < 36; // Исчезают когда камера улетает
+    p.g.visible = e>0 && t < 36; 
     if(!p.g.visible) continue;
     const k=E.inOutCubic(e);
     p.g.position.lerpVectors(p.from,p.to,k);
@@ -479,22 +471,18 @@ function applyTime(t){
     particles.visible = true;
     gesGroup.visible = true;
     
-    const pathProgress = clamp01((t - 36) / 6); // Путь идет 6 секунд
+    const pathProgress = clamp01((t - 36) / 6); 
     pathMat.opacity = pathProgress * 0.8;
     particles.material.opacity = pathProgress * 0.8;
     
     // Частицы летят ОТ ГЭС (t=1) К ДОМУ (t=0)
     const positions = particles.geometry.attributes.position.array;
     for(let i=0; i<partCount; i++){
-      // Двигаем частицу к дому
       partData[i].t -= partData[i].speed * 2.0; 
-      
-      // Если долетела до дома, respawn у ГЭС
       if(partData[i].t < 0) partData[i].t = 1.0;
       
-      // Показываем частицу только если путь до нее "дорос"
       if(partData[i].t > (1 - pathProgress)){ 
-         positions[i*3+1] = -100; // Прячем далеко
+         positions[i*3+1] = -100; 
       } else {
         const pt = curve.getPointAt(partData[i].t);
         positions[i*3] = pt.x + Math.sin(t*5+i)*0.2; 
@@ -504,7 +492,6 @@ function applyTime(t){
     }
     particles.geometry.attributes.position.needsUpdate = true;
     
-    // Импульс на ГЭС
     if(t > 36 && t < 38) {
        brandBox.material.color.setHex(0xffffff);
     } else {
@@ -580,4 +567,3 @@ setTimeout(()=>el('load').classList.add('gone'),350);
 </script>
 </body>
 </html>
-
