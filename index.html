@@ -661,7 +661,7 @@ addEventListener('resize',()=>{ renderer.setSize(innerWidth,innerHeight); camera
    ═══════════════════════════════════════════════════════════════ */
 // Множитель скорости: 1 = норма, 2 = x2 быстрее. 
 // По умолчанию 1, чтобы не проскакивать важные детали.
-const SPEED = parseFloat(Q.get('speed') || '1');
+const SPEED = parseFloat(Q.get('speed') || '1.5');
 
 function tick(now){
   const dt = Math.min(.05, (now - prev) / 1000); 
