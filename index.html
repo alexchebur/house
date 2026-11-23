@@ -193,6 +193,8 @@ const CONCEPT_IN   = 60.0;   // когда плашка начинает поя�
 const CONCEPT_HOLD = 30.0;   // сколько держим полностью видимой
 const CONCEPT_OUT  = CONCEPT_IN + CONCEPT_HOLD;      // начало ухода (66)
 const DUR_EXT      = CONCEPT_OUT + 2.0;              // новый конец ролика (68)
+const CONCEPT_CAP_HIDE = CONCEPT_IN + 3;   // плашка исчезает через 3 с после появления
+
 const Q = new URLSearchParams(location.search);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const MOBILE = innerWidth < 760 || /Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -784,11 +786,21 @@ CH.forEach((c,i)=>{const d=document.createElement('div'); d.className='dot'; d.s
 let lastCh=-1;
 function updateUI(t){
   let idx=0; for(let i=0;i<CH.length;i++) if(t>=CH[i].t) idx=i;
-  if(idx!==lastCh){ lastCh=idx; cap.classList.remove('in'); setTimeout(()=>{capK.textContent=CH[idx].k; capH.textContent=CH[idx].h; capP.textContent=CH[idx].p; if(idx>0 && t<49 || t>=CONCEPT_IN) cap.classList.add('in');},180); [...dots.children].forEach((d,i)=>d.classList.toggle('on',i===idx)); }
-  cap.classList.toggle('in', idx>0 && t<49 || t>=CONCEPT_IN);
+  const capVisible = (idx>0 && t<49) || (t>=CONCEPT_IN && t<CONCEPT_CAP_HIDE);
+  if(idx!==lastCh){
+    lastCh=idx;
+    cap.classList.remove('in');
+    setTimeout(()=>{
+      capK.textContent=CH[idx].k; capH.textContent=CH[idx].h; capP.textContent=CH[idx].p;
+      if(capVisible) cap.classList.add('in');
+    },180);
+    [...dots.children].forEach((d,i)=>d.classList.toggle('on',i===idx));
+  }
+  cap.classList.toggle('in', capVisible);
   prolog.classList.toggle('hide', t>3.0);
   fill.style.width=(t/DUR*100)+'%';
 }
+
 let time = parseFloat(Q.get('t')||'0')||0, playing=!REDUCED, prev=performance.now();
 if(REDUCED){ time=DUR-2; }
 function setTime(v){ time=THREE.MathUtils.clamp(v,0,DUR); lastCh=-1; applyTime(time); }
