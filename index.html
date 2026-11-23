@@ -659,7 +659,7 @@ const slopeGeo=new THREE.BoxGeometry(SLOPE+.3,.14,D+1.2);
   [D/2 + R*.4, -(D/2 + R*.4)].forEach((z,i)=>{
     const g = new THREE.Mesh(gableGeo, mGable);
     g.position.set(0, wallTop - R*.5, z);      // нижняя кромка утоплена в верхний венец
-    g.castShadow = !MOBILE;
+    g.castShadow = false;
     house.add(g);
     reveal(g, 14.75 + i*.35, {dur:1.25, mode:'swing', dist:3.2, rot:(i?-1:1)*.6, ease:E.outCubic});
   });
