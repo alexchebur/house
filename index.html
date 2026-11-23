@@ -434,11 +434,11 @@ const GES_LABEL = (()=>{
   const LETTER_H = 3.2;      // высота букв в метрах сцены
   const GAP      = 0.22;     // межбуквенный просвет (в долях высоты)
   const ADVANCE  = 0.72 + GAP;
-  const THICK    = 0.06;     // толщина «плёнки» над кровлей
+  const THICK    = 0.01;     // толщина «плёнки» над кровлей
 
   const mat = new THREE.MeshStandardMaterial({
     color: 0xf4f8fc, roughness:.45, metalness:.05,
-    emissive: C.warm, emissiveIntensity: 0,      // подсветится в финале
+    emissive: C.warm, emissiveIntensity: 3,      // подсветится в финале
     side: THREE.DoubleSide
   });
 
