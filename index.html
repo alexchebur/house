@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -156,12 +155,12 @@
 </div>
 <div id="load">загрузка сцены…</div>
 
-/* <script type="importmap">
+<script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
-</script> */
+</script>
 
 <script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import * as THREE from 'three';
 
 /* ═══════════════════════════════════════════════════════════════
    КОНФИГ И ПАРАМЕТРЫ
@@ -180,20 +179,18 @@ const CH = [
   {t:8.6, k:'02 · Сруб', h:'Венцы', p:'Кедр, лиственица, тесло. Два света, простор.'},
   {t:14.6, k:'03 · Кровля', h:'Пологий скат', p:'Широкая крыша защищает от снега.'},
   {t:19.6, k:'04 · Резьба', h:'Наличники', p:'Особый орнамент уральских зодчих.'},
-  {t:25.0, k:'05 · Тепло', h:'Дом оживает', p:'Свет в окнах, дым над трубой.'}, // Вернули оригинальный тайминг
+  {t:25.0, k:'05 · Тепло', h:'Дом оживает', p:'Свет в окнах, дым над трубой.'},
   {t:30.2, k:'06 · Толока', h:'Верхотурская толока', p:'Соседи, волонтёры, мастера.'},
   {t:36.0, k:'07 · Путь', h:'Энергия места', p:'От верстового столба — к сердцу города.'},
   {t:48.0, k:'Финал', h:'Верхотурская ГЭС', p:'Энергия, сохраняющая историю.'},
   {t:51.0, k:'08 · Концепции', h:'Два пути одного дома', p:'«Верстовой дом» и «Верхотурская толока».'}
 ];
-/* ── ФИНАЛЬНЫЙ БЛОК: ДВЕ КОНЦЕПЦИИ ─────────────────────────────
-   Тайминги в секундах шкалы. Плашка держится дольше motion-кейфреймов,
-   чтобы текст успели прочитать. Крутите CONCEPT_HOLD под темп чтения. */
-const CONCEPT_IN   = 60.0;   // когда плашка начинает появляться
-const CONCEPT_HOLD = 30.0;   // сколько держим полностью видимой
-const CONCEPT_OUT  = CONCEPT_IN + CONCEPT_HOLD;      // начало ухода (66)
-const DUR_EXT      = CONCEPT_OUT + 2.0;              // новый конец ролика (68)
-const CONCEPT_CAP_HIDE = CONCEPT_IN + 3;   // плашка исчезает через 3 с после появления
+/* ── ФИНАЛЬНЫЙ БЛОК: ДВЕ КОНЦЕПЦИИ ───────────────────────────── */
+const CONCEPT_IN   = 60.0;
+const CONCEPT_HOLD = 30.0;
+const CONCEPT_OUT  = CONCEPT_IN + CONCEPT_HOLD;
+const DUR_EXT      = CONCEPT_OUT + 2.0;
+const CONCEPT_CAP_HIDE = CONCEPT_IN + 3;
 
 const Q = new URLSearchParams(location.search);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -287,55 +284,39 @@ function applyTracks(t){
 /* ═══════════════════════════════════════════════════════════════
    ЛАНДШАФТ И РЕКА · почти плоская равнина
    ═══════════════════════════════════════════════════════════════ */
-
-// ── РУЧКИ НАСТРОЙКИ РЕЛЬЕФА ──────────────────────────────────
 const RELIEF = {
-  amp:   0.35,   // амплитуда мягких волн, м (было 5 → стало 0.35)
-  freq:  0.012,  // частота волн: меньше = длиннее и плавнее (было 0.02)
-  noise: 0.04,   // микрошум вместо Math.random()*0.5 (детерминированный)
-  padR:  26,     // радиус идеально плоской площадки вокруг дома
-  bankW: 22,     // полуширина пологого спуска к реке
-  bedW:  11,     // полуширина самого русла
-  bankD: 0.55,   // глубина спуска (было 0.6)
-  bedD:  1.10    // глубина русла (было 1.2)
+  amp:   0.35, freq:  0.012, noise: 0.04, padR:  26,
+  bankW: 22, bedW:  11, bankD: 0.55, bedD:  1.10
 };
 const RIVER_Z = -60;
 
-const groundGeo = new THREE.PlaneGeometry(400, 400, 96, 96); // 128→96: меньше полигонов, глаже нормали
+const groundGeo = new THREE.PlaneGeometry(400, 400, 96, 96);
 const pos = groundGeo.attributes.position;
 
 for(let i=0; i<pos.count; i++){
-  const x = pos.getX(i), y = pos.getY(i);   // локальные XY плоскости → мировые X и Z
-
-  // 1. Мягкий рельеф: две длинные волны + детерминированный микрошум
+  const x = pos.getX(i), y = pos.getY(i);
   let z = Math.sin(x*RELIEF.freq) * Math.cos(y*RELIEF.freq*0.8) * RELIEF.amp
         + Math.sin(x*RELIEF.freq*2.3 + y*RELIEF.freq*1.7) * RELIEF.amp * 0.35
         + (rnd()-0.5) * RELIEF.noise;
-
-  // 2. Площадка под домом и толокой — строго горизонтальная
   const dHome = Math.hypot(x, y);
-  z *= clamp01((dHome - RELIEF.padR) / 14);   // 0 у дома → 1 на удалении
-
-  // 3. Русло реки: smoothstep вместо излома на границе
-  const dRiver = Math.abs(y + RIVER_Z);   // = |localY − 60| → worldZ = −60 ✓
+  z *= clamp01((dHome - RELIEF.padR) / 14);
+  const dRiver = Math.abs(y + RIVER_Z);
   const bank = 1 - clamp01((dRiver - RELIEF.bedW) / (RELIEF.bankW - RELIEF.bedW));
   const bed  = 1 - clamp01(dRiver / RELIEF.bedW);
-  const sm = t => t*t*(3-2*t);                // сглаживание входа/выхода
+  const sm = t => t*t*(3-2*t);
   z -= sm(bank) * RELIEF.bankD * 4;
   z -= sm(bed)  * RELIEF.bedD  * 4;
-
   pos.setZ(i, z);
 }
 groundGeo.computeVertexNormals();
 
 const ground = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({
-  color: C.snow, roughness:.95, metalness:0, flatShading:false   // flatShading обязательно false
+  color: C.snow, roughness:.95, metalness:0, flatShading:false
 }));
 ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = !MOBILE;
 scene.add(ground);
 
-// Река — без изменений, уровень согласован с новым руслом
 const riverMesh = new THREE.Mesh(
   new THREE.BoxGeometry(400, 3.0, 70),
   new THREE.MeshStandardMaterial({
@@ -361,108 +342,160 @@ const trees = new THREE.Group();
 scene.add(trees);
 
 {
-  // Количество деревьев
   const N = MOBILE ? 40 : 80; 
-  
-  // Материал елей
   const mat = new THREE.MeshStandardMaterial({color:C.fir, roughness:.9, flatShading:true});
-  
-  // Геометрия ярусов (3 конуса для каждой ели)
   const tiers = [
     new THREE.ConeGeometry(1.5, 2.4, 7),
     new THREE.ConeGeometry(1.15, 2.1, 7),
     new THREE.ConeGeometry(.75, 1.7, 7)
   ];
-  
-  // Создаем InstancedMesh для каждого яруса
   const inst = tiers.map(g => {
     const m = new THREE.InstancedMesh(g, mat, N); 
     m.castShadow = !MOBILE; 
     trees.add(m); 
     return m;
   });
-  
   const M = new THREE.Matrix4();
   const Qt = new THREE.Quaternion();
   const S = new THREE.Vector3();
   const P = new THREE.Vector3();
-  
-  let validCount = 0; // Счетчик успешно размещенных деревьев
-  
-  // Используем while, чтобы гарантировать ровно N деревьев, 
-  // даже если некоторые попытки попадут в реку
+  let validCount = 0;
   while(validCount < N) {
     let a = rr(0, Math.PI*2);
     let d = rr(18, 80);
-    
-    // Исключаем зону перед домом для камеры (старая логика)
     if(a > -1 && a < 1 && d > 20) d += 30; 
-    
     const x = Math.cos(a) * d;
     const z = Math.sin(a) * d - 10;
     const s = rr(.75, 1.7);
-    
-    // === ФИЛЬТР РУСЛА РЕКИ ===
-    // Река находится на Z ≈ -60. Ширина русла около 20-25 единиц.
-    // Если точка попадает в этот диапазон, пропускаем её.
     const distToRiver = Math.abs(z - (-60));
     if(distToRiver < 15) continue; 
-    // ==========================
-    
-    // Размещаем дерево только если оно НЕ в реке
     for(let k=0; k<3; k++){
       P.set(x, (1.1 + k*1.35)*s, z); 
       S.set(s,s,s);
       Qt.setFromAxisAngle(new THREE.Vector3(0,1,0), rr(0, 6.28));
       inst[k].setMatrixAt(validCount, M.compose(P, Qt, S));
     }
-    
     validCount++;
   }
-  
-  // Обновляем матрицы инстансов
   inst.forEach(m => m.instanceMatrix.needsUpdate = true);
 }
-
-// Анимация появления леса
 reveal(trees, .6, {dur:2.6, mode:'rise', dist:4});
+
 /* ═══════════════════════════════════════════════════════════════
-   СВЕТЯЩИЙСЯ ПУТЬ И ЧАСТИЦЫ (ИСПРАВЛЕНО)
+   ВЕРСТОВОЙ СТОЛБ · передний план пролога (ПРАВКА 1)
+   Полосатый дорожный столб у старта светящегося пути.
    ═══════════════════════════════════════════════════════════════ */
-// Одна непрерывная кривая от Дома (0) к ГЭС (1)
+const milepost = new THREE.Group();
+{
+  const H = 2.6, SW = .34;                       // высота и ширина столба
+  const stripeH = H/7;
+  const mBlack = new THREE.MeshStandardMaterial({color:0x1d232b, roughness:.8});
+  const mWhite = new THREE.MeshStandardMaterial({color:0xe9eef4, roughness:.75});
+  // Полосатое тело: 7 чередующихся сегментов (верстовая окраска)
+  for(let i=0;i<7;i++){
+    const seg = new THREE.Mesh(new THREE.BoxGeometry(SW, stripeH, SW), i%2 ? mWhite : mBlack);
+    seg.position.y = stripeH*(i+.5);
+    seg.castShadow = !MOBILE;
+    milepost.add(seg);
+  }
+  // Скошенная шапка
+  const capM = new THREE.Mesh(new THREE.BoxGeometry(SW+.08, .1, SW+.08), mBlack);
+  capM.position.y = H+.05; milepost.add(capM);
+  // Табличка с тёплой рамкой (лицом к камере пролога, +Z)
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(.62, .4, .05),
+    new THREE.MeshStandardMaterial({color:0xf3e6d0, roughness:.65}));
+  plate.position.set(0, H-.42, SW/2+.03); milepost.add(plate);
+  const plateRim = new THREE.Mesh(new THREE.BoxGeometry(.68, .46, .03),
+    new THREE.MeshStandardMaterial({color:C.warm, roughness:.6, emissive:C.warm, emissiveIntensity:.25}));
+  plateRim.position.set(0, H-.42, SW/2+.015); milepost.add(plateRim);
+  // Тёплый маячок-огонёк на шапке (перекликается с путём энергии)
+  const beacon = new THREE.Sprite(new THREE.SpriteMaterial({map:TEX, color:0xff9a45, transparent:true, opacity:.55, blending:THREE.AdditiveBlending, depthWrite:false}));
+  beacon.scale.setScalar(1.4); beacon.position.y = H+.22; milepost.add(beacon);
+  milepost.userData.beacon = beacon;
+  // Снежная шапочка на верхушке
+  const snowCap = new THREE.Mesh(new THREE.BoxGeometry(SW+.1, .07, SW+.1), mSnowRef());
+  snowCap.position.y = H+.13; milepost.add(snowCap);
+  function mSnowRef(){ return new THREE.MeshStandardMaterial({color:0xf2f7fc, roughness:.9}); }
+}
+// Позиция: правее оси взгляда пролога, между камерой (z≈33) и домом —
+// на переднем плане, рядом со стартом светящегося пути (0, .5, 10)
+milepost.position.set(3.4, 0, 12.5);
+milepost.rotation.y = -.18;                      // лёгкий разворот таблички к камере
+scene.add(milepost);
+reveal(milepost, 1.2, {dur:1.1, mode:'drop', dist:3.4, ease:E.outBack});
+
+/* ═══════════════════════════════════════════════════════════════
+   СВЕТЯЩИЙСЯ ПУТЬ И ЧАСТИЦЫ
+   ═══════════════════════════════════════════════════════════════ */
 const pathPoints = [
-  new THREE.Vector3(0, 0.5, 10),   // Старт у дома
-  new THREE.Vector3(8, 0.2, -10),  // Изгиб через лес
-  new THREE.Vector3(-8, 0.2, -30), // Изгиб к реке
-  new THREE.Vector3(0, 0.5, -55)   // Финиш у ГЭС
+  new THREE.Vector3(0, 0.5, 10),
+  new THREE.Vector3(8, 0.2, -10),
+  new THREE.Vector3(-8, 0.2, -30),
+  new THREE.Vector3(0, 0.5, -55)
 ];
 const curve = new THREE.CatmullRomCurve3(pathPoints);
 
-// Визуальная труба пути
 const tubeGeo = new THREE.TubeGeometry(curve, 100, 0.15, 8, false);
 const pathMat = new THREE.MeshBasicMaterial({color:C.warm, transparent:true, opacity:0, blending:THREE.AdditiveBlending});
 const pathMesh = new THREE.Mesh(tubeGeo, pathMat);
 pathMesh.visible = false;
 scene.add(pathMesh);
 
-// Частицы: Источник строго у ГЭС (t=1.0)
-const partCount = 400;
+// Частицы (ПРАВКА 6): реже (90 вместо 400), медленнее (~в 4 раза),
+// равномерно рассеяны по длине пути, а не скучены у ГЭС.
+const partCount = MOBILE ? 60 : 90;
 const partGeo = new THREE.BufferGeometry();
 const partPos = new Float32Array(partCount*3);
 const partData = []; 
 
 for(let i=0; i<partCount; i++){
-  // Инициализируем все частицы в конце пути (у ГЭС)
-  partData.push({t: 1.0, speed: 0.004 + Math.random()*0.004});
-  // Прячем их изначально
+  // Детерминированный равномерный разброс по всей кривой + свой темп
+  partData.push({t: rnd(), speed: 0.0011 + rnd()*0.0009});
   partPos[i*3]=0; partPos[i*3+1]=-100; partPos[i*3+2]=0;
 }
 partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
 const particles = new THREE.Points(partGeo, new THREE.PointsMaterial({
-  color:C.warm, size:0.6, transparent:true, opacity:0, blending:THREE.AdditiveBlending
+  color:C.warm, size:0.55, transparent:true, opacity:0, blending:THREE.AdditiveBlending
 }));
 particles.visible = false;
 scene.add(particles);
+
+/* ═══════════════════════════════════════════════════════════════
+   ПАДАЮЩИЙ СНЕГ (ПРАВКА 5) · один Points, чистая функция времени.
+   Никаких аллокаций в кадре; детерминирован при перемотке.
+   ═══════════════════════════════════════════════════════════════ */
+const SNOW_N = MOBILE ? 220 : 420;
+const snowGeo = new THREE.BufferGeometry();
+const snowPos = new Float32Array(SNOW_N*3);
+const snowSeed = new Float32Array(SNOW_N*4);     // x0, z0, фаза, скорость
+const SNOW_AREA = 70, SNOW_H = 26;               // область вокруг дома/пути
+for(let i=0;i<SNOW_N;i++){
+  snowSeed[i*4]   = (rnd()-.5)*SNOW_AREA*2;
+  snowSeed[i*4+1] = (rnd()-.5)*SNOW_AREA*2 - 20; // сдвиг области к реке/ГЭС
+  snowSeed[i*4+2] = rnd()*Math.PI*2;
+  snowSeed[i*4+3] = .55 + rnd()*.75;             // м/с по вертикали
+  snowPos[i*3]=0; snowPos[i*3+1]=-100; snowPos[i*3+2]=0;
+}
+snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
+const snowFall = new THREE.Points(snowGeo, new THREE.PointsMaterial({
+  map:TEX, color:0xffffff, size:.28, transparent:true, opacity:.75,
+  depthWrite:false, sizeAttenuation:true
+}));
+snowFall.frustumCulled = false;
+scene.add(snowFall);
+
+function updateSnow(t){
+  const arr = snowGeo.attributes.position.array;
+  for(let i=0;i<SNOW_N;i++){
+    const x0=snowSeed[i*4], z0=snowSeed[i*4+1], ph=snowSeed[i*4+2], sp=snowSeed[i*4+3];
+    // Циклическое падение: mod по высоте, лёгкий боковой снос синусом
+    const y = SNOW_H - ((t*sp + ph*4) % SNOW_H);
+    arr[i*3]   = x0 + Math.sin(t*.6 + ph)*1.2;
+    arr[i*3+1] = y;
+    arr[i*3+2] = z0 + Math.cos(t*.45 + ph)*.8;
+  }
+  snowGeo.attributes.position.needsUpdate = true;
+}
 
 /* ВЕРХОТУРСКАЯ ГЭС */
 const gesGroup = new THREE.Group();
@@ -475,30 +508,27 @@ dam.position.y = 4; gesGroup.add(dam);
 const hall = new THREE.Mesh(new THREE.BoxGeometry(20, 6, 10), new THREE.MeshStandardMaterial({color:0x556677}));
 hall.position.set(0, 3, 6); gesGroup.add(hall);
 const brandBox = new THREE.Mesh(new THREE.BoxGeometry(18, 0.5, 0.5), new THREE.MeshBasicMaterial({color:C.warm}));
-brandBox.position.set(0, 6.01, 11.0);   // прямо на передней грани, не над крышей
+brandBox.position.set(0, 6.01, 11.0);
+gesGroup.add(brandBox);                          // (исправлено: раньше не добавлялся в группу)
+
 /* ═══════════════════════════════════════════════════════════════
    ВЕКТОРНАЯ НАДПИСЬ «ГЭС» НА КРОВЛЕ МАШИННОГО ЗАЛА
-   Вставить сразу после создания gesGroup / brandBox
    ═══════════════════════════════════════════════════════════════ */
-
-// ── Векторные контуры букв (система координат: высота 1.0, ширина ~0.72) ──
 function glyphGES(ch){
   const s = new THREE.Shape();
-  const hole = pts => { const p=new THREE.Path(); pts.forEach(([x,y],i)=> i?p.lineTo(x,y):p.moveTo(x,y)); p.closePath(); return p; };
-
-  if(ch === 'Г'){                       // г-образный силуэт
+  if(ch === 'Г'){
     [[0,0],[.20,0],[.20,.80],[.72,.80],[.72,1],[0,1]].forEach(([x,y],i)=> i?s.lineTo(x,y):s.moveTo(x,y));
     s.closePath();
   }
   else if(ch === 'Э'){
-    const W = .72;                      // ширина глифа — ось отражения
+    const W = .72;
     const raw = [[.72,0],[0,0],[0,1],[.72,1],[.72,.80],[.20,.80],[.20,.60],[.58,.60],
                  [.58,.40],[.20,.40],[.20,.20],[.72,.20]];
-    raw.map(([x,y]) => [W - x, y])      // ← вот здесь происходит отзеркаливание
+    raw.map(([x,y]) => [W - x, y])
        .forEach(([x,y],i)=> i?s.lineTo(x,y):s.moveTo(x,y));
     s.closePath();
   }
-  else if(ch === 'С'){                  // С с внутренним вырезом (hole)
+  else if(ch === 'С'){
     [[.72,0],[0,0],[0,1],[.72,1],[.72,.80],[.20,.80],[.20,.20],[.72,.20]]
       .forEach(([x,y],i)=> i?s.lineTo(x,y):s.moveTo(x,y));
     s.closePath();
@@ -508,14 +538,14 @@ function glyphGES(ch){
 
 const GES_LABEL = (()=>{
   const TEXT   = 'ГЭС';
-  const LETTER_H = 3.2;      // высота букв в метрах сцены
-  const GAP      = 0.22;     // межбуквенный просвет (в долях высоты)
+  const LETTER_H = 3.2;
+  const GAP      = 0.22;
   const ADVANCE  = 0.72 + GAP;
-  const THICK    = 0.01;     // толщина «плёнки» над кровлей
+  const THICK    = 0.01;
 
   const mat = new THREE.MeshStandardMaterial({
     color: 0xf4f8fc, roughness:.45, metalness:.05,
-    emissive: C.warm, emissiveIntensity: 3,      // подсветится в финале
+    emissive: C.warm, emissiveIntensity: 3,
     side: THREE.DoubleSide
   });
 
@@ -530,19 +560,16 @@ const GES_LABEL = (()=>{
     grp.add(m);
   });
 
-  // Кладём буквы на ГОРИЗОНТАЛЬНУЮ плоскость:
-  // ShapeGeometry лежит в XY → поворот -90° по X укладывает её в XZ,
-  // extrude (локальный +Z) становится мировым +Y, т.е. буквы «смотрят» вверх.
   grp.rotation.x = -Math.PI/2;
-
-  // Позиция: верхняя грань машинного зала.
-  // hall: BoxGeometry(20,6,10) at (0,3,6) → верх y=6, z от 1 до 11.
   grp.position.set(0, 6.04, 6.5);
-
   grp.userData.mat = mat;
   gesGroup.add(grp);
   return grp;
 })();
+
+// Мировой центр надписи (для финальной камеры): gesGroup(0,-4.5,-60) + grp(0,6.04,6.5)
+const GES_LABEL_WORLD = new THREE.Vector3(0, -4.5 + 6.04 + .02, -60 + 6.5 - 1.6);
+
 /* ДОМ */
 const house = new THREE.Group(); scene.add(house);
 const W=9.5, D=5.2, R=.19, ROWS=20, STEP=R*2*.92;
@@ -620,7 +647,32 @@ const slopeGeo=new THREE.BoxGeometry(SLOPE+.3,.14,D+1.2);
   house.add(g); reveal(g,14.6+i*.35,{dur:1.25,mode:'swing',dist:3.2,rot:s*.85,ease:E.outCubic});
 });
 
-/* ЛЮДИ (ТОЛОКА) */
+/* ── ФРОНТОНЫ (ПРАВКА 7): треугольники под скатами с обеих сторон.
+   Закрывают просвет между верхним венцом и коньком — сквозь дом
+   больше не видно фон. Падают вместе с кровлей (swing). ── */
+{
+  const gableShape = new THREE.Shape();
+  gableShape.moveTo(-W/2, 0);
+  gableShape.lineTo( W/2, 0);
+  gableShape.lineTo( 0,   RISE + R);           // чуть выше конька — без щели
+  gableShape.closePath();
+  const gableGeo = new THREE.ShapeGeometry(gableShape);
+  const mGable = new THREE.MeshStandardMaterial({color:C.woodDark, roughness:.88, side:THREE.DoubleSide});
+  [D/2 + R*.4, -(D/2 + R*.4)].forEach((z,i)=>{
+    const g = new THREE.Mesh(gableGeo, mGable);
+    g.position.set(0, wallTop - R*.5, z);      // нижняя кромка утоплена в верхний венец
+    g.castShadow = !MOBILE;
+    house.add(g);
+    reveal(g, 14.75 + i*.35, {dur:1.25, mode:'swing', dist:3.2, rot:(i?-1:1)*.6, ease:E.outCubic});
+  });
+  // Вертикальная доска-«полотенце» на коньке фасада (декор фронтона)
+  const towel = new THREE.Mesh(new THREE.BoxGeometry(.16, RISE+.3, .1), mCarve);
+  towel.position.set(0, wallTop + RISE/2, D/2 + R*.4 + .06);
+  house.add(towel);
+  reveal(towel, 15.4, {dur:.9, mode:'drop', dist:2, ease:E.outCubic});
+}
+
+/* ЛЮДИ (ТОЛОКА) · ПРАВКА 3: ближе к дому, видны на портретном экране */
 const people=[];
 {
   const bodyGeo=new THREE.CapsuleGeometry(.17,.44,4,8), headGeo=new THREE.SphereGeometry(.13,10,8);
@@ -633,45 +685,63 @@ const people=[];
     const b=new THREE.Mesh(bodyGeo,mat); b.position.y=.62; b.castShadow=!MOBILE; g.add(b);
     const h=new THREE.Mesh(headGeo,skin); h.position.y=1.03; g.add(h);
     const cap=new THREE.Mesh(new THREE.SphereGeometry(.145,10,6,0,6.28,0,1.1), mat); cap.position.y=1.05; g.add(cap);
-    const a = -Math.PI*.15 + (i/(N-1))*Math.PI*1.3;
-    const rad = rr(7.4,10.4);
-    const to=new THREE.Vector3(Math.cos(a)*rad*1.05, 0, Math.abs(Math.sin(a))*rad*.55+3.4);
-    if(i%4===0) to.set(rr(5.2,6.6),0,rr(-1.2,1.6));
-    const from=new THREE.Vector3(to.x*2.6+rr(-4,4), 0, to.z*2.9+rr(2,8));
+    // Дуга перед фасадом: радиус 5.3–6.2 (было 7.4–10.4), прижата к дому
+    const a = Math.PI*.12 + (i/(N-1))*Math.PI*.76;   // строго передняя полудуга
+    const rad = rr(5.3, 6.2);
+    const to=new THREE.Vector3(Math.cos(a)*rad, 0, Math.abs(Math.sin(a))*rad*.5 + 3.2);
+    if(i%4===0) to.set(rr(4.6,5.4)*(i%8===0?1:-1), 0, rr(1.2,2.6));  // мастера у стены
+    const from=new THREE.Vector3(to.x*2.2+rr(-3,3), 0, to.z*2.4+rr(2,6));
     g.position.copy(from); g.visible=false; scene.add(g);
     people.push({g,from,to,t0:30.2+i*.26,dur:2.7,ph:rr(0,6.28)});
   }
 }
 
-/* КАМЕРА */
+/* ═══════════════════════════════════════════════════════════════
+   КАМЕРА (ПРАВКИ 2 и 4)
+   · Крупные планы отодвинуты — дом целиком в кадре.
+   · Адаптивный FOV: на портретном экране угол шире (+12°),
+     чтобы ширина дома помещалась при узком aspect.
+   · Финал: остановка НАД надписью «ГЭС», look в центр букв.
+   ═══════════════════════════════════════════════════════════════ */
 const SHOTS=[
-  {t:0, p:[0,5.4,32], l:[0,4.0,0], f:44},
-  {t:8.6, p:[14,8.0,14.5], l:[0,4.4,0], f:42},
-  {t:19.6, p:[4.2,4.0,11.6], l:[.5,4.5,2.4], f:36},
-  {t:30.2, p:[0, 12, 28], l:[0, 4, 0], f:38}, 
-  {t:36, p:[5, 8, 15], l:[0, 4, 0], f:50}, 
-  {t:42, p:[10, 6, -20], l:[0, 2, -30], f:45}, 
-  {t:48, p:[0, 12, -50], l:[0, 5, -60], f:40},
-  {t:52, p:[14, 10, -48], l:[0, 4, -60], f:41},   // уход в мягкий орбитальный дрейф под плашку
-  {t:DUR, p:[20, 8, -55], l:[0, 4, -60], f:42}  
+  {t:0,    p:[0, 6.2, 33],   l:[0, 4.2, 0],   f:44},   // пролог: дом + столб на переднем плане
+  {t:8.6,  p:[16, 9.0, 22],  l:[0, 4.4, 0],   f:42},   // сруб: было (14,8,14.5) → отодвинуто
+  {t:19.6, p:[7.5, 5.6, 25], l:[0, 4.6, 1.0], f:40},   // резьба: было (4.2,4,11.6) → дом почти целиком
+  {t:30.2, p:[0, 10.5, 26],  l:[0, 3.6, 2.0], f:42},   // толока: люди у фасада в кадре
+  {t:36,   p:[6, 9, 18],     l:[0, 4, -2],    f:46},
+  {t:42,   p:[10, 7, -18],   l:[0, 2, -32],   f:44},
+  {t:48,   p:[0, 14, -34],   l:[0, 2.5, -54], f:44},
+  // ПРАВКА 4: приходим ТОЧНО над надписью и остаёмся там до конца.
+  // look = центр букв; камера сверху-спереди, буквы лежат в кадре горизонтально.
+  {t:53,   p:[0, 15, -31],   l:[GES_LABEL_WORLD.x, GES_LABEL_WORLD.y, GES_LABEL_WORLD.z], f:44},
+  {t:DUR,  p:[0, 15.6, -30.4], l:[GES_LABEL_WORLD.x, GES_LABEL_WORLD.y, GES_LABEL_WORLD.z], f:44} // микродрейф, надпись не покидает кадр
 ];
 const _p=new THREE.Vector3(), _l=new THREE.Vector3();
+function fovBoost(){
+  const a = innerWidth/innerHeight;
+  return a < .75 ? 12 : a < 1 ? 6 : 0;           // портретный телефон / планшет / десктоп
+}
 function shot(t){
   let a=SHOTS[0], b=SHOTS[SHOTS.length-1];
   for(let i=0;i<SHOTS.length-1;i++) if(t>=SHOTS[i].t && t<=SHOTS[i+1].t){a=SHOTS[i];b=SHOTS[i+1];break;}
   const k=E.inOutCubic(clamp01((t-a.t)/Math.max(.001,b.t-a.t)));
   _p.set(lerp(a.p[0],b.p[0],k),lerp(a.p[1],b.p[1],k),lerp(a.p[2],b.p[2],k));
   _l.set(lerp(a.l[0],b.l[0],k),lerp(a.l[1],b.l[1],k),lerp(a.l[2],b.l[2],k));
-  return {p:_p,l:_l,f:lerp(a.f,b.f,k)};
+  return {p:_p,l:_l,f:lerp(a.f,b.f,k)+fovBoost()};
 }
 
 /* ГЛАВНАЯ ФУНКЦИЯ ВРЕМЕНИ */
 const cTop=new THREE.Color(), cBot=new THREE.Color(), cWarm=new THREE.Color(0xffb877), cCold=new THREE.Color(0xbcd6ff);
 function applyTime(t){
   applyTracks(t);
+  updateSnow(t);                               // ПРАВКА 5: снег каждый кадр, дёшево
   
-  // ОСВЕЩЕНИЕ ДОМА (ВЕРНУЛИ ОРИГИНАЛЬНУЮ ЛОГИКУ)
-  // Тепло включается на 25-й секунде, независимо от дорожки
+  // Маячок верстового столба мягко дышит
+  if(milepost.visible){
+    milepost.userData.beacon.material.opacity = .35 + .2*Math.sin(t*2.2);
+  }
+  
+  // ОСВЕЩЕНИЕ ДОМА
   const w=E.inOutCubic(clamp01((t-25.0)/3.2));
   mGlass.emissiveIntensity = w*2.6;
   lampIn.intensity = w*26; lampOut.intensity = w*10;
@@ -707,30 +777,19 @@ function applyTime(t){
     pathMat.opacity = pathProgress * 0.8;
     particles.material.opacity = pathProgress * 0.8;
     
-    // Надпись «ГЭС» проявляется вместе с финальным титром
     GES_LABEL.userData.mat.emissiveIntensity = clamp01((t-48)/2.5) * 0.55;
     
-    // Обновление частиц: Движение ОТ ГЭС К ДОМУ
+    // Обновление частиц: медленно, разреженно, ОТ ГЭС К ДОМУ (ПРАВКА 6)
     const positions = particles.geometry.attributes.position.array;
     for(let i=0; i<partCount; i++){
-      // Уменьшаем t, чтобы двигаться от 1 (ГЭС) к 0 (Дом)
       partData[i].t -= partData[i].speed;
-      
-      // Если долетели до дома, возвращаем на старт (к ГЭС)
-      if(partData[i].t < 0) partData[i].t = 1.0;
-      
-      // Проверяем, "дорос" ли путь до этой точки
-      // pathProgress идет от 0 до 1. Точка пути видна, если ее t <= pathProgress
-      // Но так как мы движемся в обратную сторону, условие такое:
+      if(partData[i].t < 0) partData[i].t += 1.0;   // плавный цикл без сброса в кучу
       if(partData[i].t > (1 - pathProgress)){ 
-         // Скрываем частицу, если путь до нее еще не дошел
          positions[i*3+1] = -100; 
       } else {
-        // Берем точку на кривой
         const pt = curve.getPointAt(partData[i].t);
-        // Добавляем легкое дрожание
-        positions[i*3] = pt.x + Math.sin(t*5+i)*0.2; 
-        positions[i*3+1] = pt.y + 0.5 + Math.cos(t*3+i)*0.2;
+        positions[i*3] = pt.x + Math.sin(t*2.2+i)*0.12; 
+        positions[i*3+1] = pt.y + 0.5 + Math.cos(t*1.6+i)*0.12;
         positions[i*3+2] = pt.z;
       }
     }
@@ -748,18 +807,16 @@ function applyTime(t){
     particles.visible = false;
     gesGroup.visible = false;
   }
-  // ── Плашка двух концепций (после титра ГЭС) ──
+  // ── Плашка двух концепций ──
   const conceptsEl = document.getElementById('concepts');
   const showConcepts = t >= CONCEPT_IN && t <= CONCEPT_OUT + 1.2;
   if(showConcepts !== conceptsEl.classList.contains('in')){
     conceptsEl.classList.toggle('in', showConcepts);
     if(showConcepts){
-      // каскад: каждой .rise-строке своя задержка (простая, читаемая)
       conceptsEl.querySelectorAll('.rise').forEach((n,i)=> n.style.setProperty('--d', (i*0.14)+'s'));
       conceptsEl.scrollTop = 0;
     }
   }
-  // титр ГЭС уступает место плашке (перекрываем класс .show только в этом окне)
   if(t >= CONCEPT_IN - 0.8) endcard.classList.remove('show');
   // Камера
   const s=shot(t);
@@ -807,17 +864,21 @@ function setTime(v){ time=THREE.MathUtils.clamp(v,0,DUR); lastCh=-1; applyTime(t
 function setPlay(v){ playing=v; el('bPlay').textContent = v?'⏸ Пауза':'▶ Пуск'; el('bPlay').classList.toggle('on',!v); }
 el('bPlay').onclick = () => setPlay(!playing);
 
-// «Заново» — перезагрузка страницы с начала
 el('bReplay').onclick = () => {
   const u = new URL(location.href);
-  u.searchParams.delete('t');   // сбрасываем ?t=…, если он был
-  location.href = u.toString(); // сохраняем ?loop= / ?speed=, если они были
+  u.searchParams.delete('t');
+  location.href = u.toString();
 };
 el('bar').addEventListener('pointerdown',e=>{ const r=e.currentTarget.getBoundingClientRect(); toggleLook(false); setTime((e.clientX-r.left)/r.width*DUR); });
 addEventListener('keydown',e=>{ if(e.code==='Space'){e.preventDefault(); if(look.on)toggleLook(false); setPlay(!playing);} if(e.key==='r'||e.key==='R'){toggleLook(false);setTime(0);setPlay(true);} if(e.key==='f'||e.key==='F')toggleLook(!look.on); });
 const look={on:false,az:0,pol:0,dist:1,drag:false,px:0,py:0};
 const mouse={x:0,y:0};
-function toggleLook(v){ look.on=v; el('bLook').classList.toggle('on',v); if(v){ setPlay(false); look.az=0; look.pol=0; look.dist=1; } else setPlay(true); }
+function toggleLook(v){
+  look.on=v;
+  const bLook = el('bLook');                   // (исправлено: кнопки нет — не падаем)
+  if(bLook) bLook.classList.toggle('on',v);
+  if(v){ setPlay(false); look.az=0; look.pol=0; look.dist=1; } else setPlay(true);
+}
 canvas.addEventListener('pointerdown',e=>{ if(!look.on)toggleLook(true); look.drag=true; look.px=e.clientX; look.py=e.clientY; canvas.setPointerCapture(e.pointerId);});
 canvas.addEventListener('pointerup',()=>look.drag=false);
 canvas.addEventListener('pointermove',e=>{ mouse.x=(e.clientX/innerWidth-.5); mouse.y=(e.clientY/innerHeight-.5); if(!look.drag||!look.on)return; look.az -= (e.clientX-look.px)*.006; look.pol -= (e.clientY-look.py)*.004; look.pol=THREE.MathUtils.clamp(look.pol,-.7,.7); look.px=e.clientX; look.py=e.clientY; });
@@ -827,8 +888,6 @@ addEventListener('resize',()=>{ renderer.setSize(innerWidth,innerHeight); camera
 /* ═══════════════════════════════════════════════════════════════
    УПРАВЛЕНИЕ СКОРОСТЬЮ И ЦИКЛОМ
    ═══════════════════════════════════════════════════════════════ */
-// Множитель скорости: 1 = норма, 2 = x2 быстрее. 
-// По умолчанию 1, чтобы не проскакивать важные детали.
 const SPEED = parseFloat(Q.get('speed') || '1.5');
 
 function tick(now){
@@ -837,14 +896,13 @@ function tick(now){
   
   if(playing && !look.on){ 
     time += dt * SPEED;
-    
-    // Логика завершения: останавливаемся на DUR, а не перезапускаем
     if(time >= DUR){ 
-      time = DUR;           // Фиксируем на последнем кадре
-      setPlay(false);       // Ставим на паузу
-      // Гарантируем видимость финального титра
-      document.getElementById('endcard').classList.add('show');
-      return;               // Прерываем цикл, чтобы не рендерить лишний кадр
+      time = DUR;
+      setPlay(false);
+      applyTime(time);                         // дорисовываем финальный кадр (снег, камера)
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);             // цикл жив: пауза/перемотка работают
+      return;
     } 
   }
   
