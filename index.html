@@ -208,39 +208,69 @@ function applyTracks(t){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ЛАНДШАФТ И РЕКА (ИСПРАВЛЕНО)
+   ЛАНДШАФТ И РЕКА (ФИНАЛЬНАЯ ВЕРСИЯ)
    ═══════════════════════════════════════════════════════════════ */
-// Создаем ландшафт с явным руслом для реки
+// 1. Генерация ландшафта с точным руслом под станцией
 const groundGeo = new THREE.PlaneGeometry(400, 400, 128, 128);
 const pos = groundGeo.attributes.position;
 for(let i=0; i<pos.count; i++){
   const x = pos.getX(i), y = pos.getY(i);
+  
+  // Базовый рельеф (холмы)
   let z = Math.sin(x*0.02)*Math.cos(y*0.02)*5 + Math.random()*0.5;
   
-  // Русло реки по центру (ось X) в зоне ГЭС (Z около -60)
-  const distToRiver = Math.abs(y - (-60)); 
-  if(distToRiver < 20) z -= (20 - distToRiver) * 0.8; // Плавный спуск
-  if(distToRiver < 10) z -= (10 - distToRiver) * 1.5; // Глубокое русло
+  // Формирование русла реки строго в зоне Z=-60 (под ГЭС)
+  const riverCenterZ = -60;
+  const distToRiver = Math.abs(y - riverCenterZ);
+  
+  // Плавный спуск к реке (ширина 40м)
+  if(distToRiver < 20) {
+    z -= (20 - distToRiver) * 0.6; 
+  }
+  // Глубокое корыто для воды (ширина 20м)
+  if(distToRiver < 10) {
+    z -= (10 - distToRiver) * 1.2; 
+  }
   
   pos.setZ(i, z);
 }
 groundGeo.computeVertexNormals();
-const ground = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({color:C.snow, roughness:0.9}));
+
+const groundMat = new THREE.MeshStandardMaterial({
+  color: C.snow, 
+  roughness: 0.95, 
+  metalness: 0.0
+});
+const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = !MOBILE;
 scene.add(ground);
 
-// Река: Синий параллелепипед, лежащий В РУСЛЕ
-// Высота 3.5 гарантирует, что вода будет видна над снежным дном русла, но ниже плотины (высота 8)
-const riverGeo = new THREE.BoxGeometry(400, 3.5, 80);
+// 2. Река: Синий параллелепипед, встроенный в русло
+// Геометрия: широкая полоса поперек станции
+const riverWidth = 400;   // Ширина вдоль оси X
+const riverLength = 70;   // Длина вдоль оси Z (захватывает всю зону ГЭС)
+const riverDepth = 3.0;   // Высота борта параллелепипеда
+
+const riverGeo = new THREE.BoxGeometry(riverWidth, riverDepth, riverLength);
 const riverMat = new THREE.MeshStandardMaterial({
-  color: C.water, 
+  color: C.water,       // #1a3b5c из конфига
   transparent: true, 
-  opacity: 0.9, 
-  roughness: 0.1, 
-  metalness: 0.8 
+  opacity: 0.92,        // Почти непрозрачная, чтобы скрыть дно
+  roughness: 0.05,      // Зеркальный блеск воды
+  metalness: 0.7,       // Металлический отблеск для реалистичности
+  emissive: 0x0a1f33,   // Легкое самосвечение для видимости в сумерках
+  emissiveIntensity: 0.3
 });
+
 const riverMesh = new THREE.Mesh(riverGeo, riverMat);
-riverMesh.position.set(0, -2.5, -60); // Y=-2.5 это уровень зеркала воды
+
+// ПОЗИЦИОНИРОВАНИЕ:
+// Y = -2.0: Верхняя грань воды будет на уровне +1.0 (-2.0 + 3.0). 
+// Это выше дна русла (около -3..-4), но ниже фундамента ГЭС (y=0..4).
+// Z = -60: Строго по центру станции.
+riverMesh.position.set(0, -2.0, -60); 
+
 scene.add(riverMesh);
 
 const hills = new THREE.Group(); scene.add(hills);
