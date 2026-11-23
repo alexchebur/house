@@ -282,18 +282,26 @@ for(let i=0;i<12;i++){
 reveal(hills,.2,{dur:2.4,mode:'fade'}); hills.children.forEach(c=>{c.material.transparent=true;});
 
 /* ═══════════════════════════════════════════════════════════════
-   ДЕРЕВЬЯ (С ФИЛЬТРОМ РУСЛА РЕКИ)
+   ДЕРЕВЬЯ (С ЗАЩИТОЙ ОТ ПОЯВЛЕНИЯ НА РЕКЕ)
    ═══════════════════════════════════════════════════════════════ */
-const trees = new THREE.Group(); scene.add(trees);
+const trees = new THREE.Group(); 
+scene.add(trees);
+
 {
-  const N = MOBILE ? 40 : 80;
+  // Количество деревьев
+  const N = MOBILE ? 40 : 80; 
+  
+  // Материал елей
   const mat = new THREE.MeshStandardMaterial({color:C.fir, roughness:.9, flatShading:true});
+  
+  // Геометрия ярусов (3 конуса для каждой ели)
   const tiers = [
     new THREE.ConeGeometry(1.5, 2.4, 7),
     new THREE.ConeGeometry(1.15, 2.1, 7),
     new THREE.ConeGeometry(.75, 1.7, 7)
   ];
   
+  // Создаем InstancedMesh для каждого яруса
   const inst = tiers.map(g => {
     const m = new THREE.InstancedMesh(g, mat, N); 
     m.castShadow = !MOBILE; 
@@ -301,17 +309,20 @@ const trees = new THREE.Group(); scene.add(trees);
     return m;
   });
   
-  const M = new THREE.Matrix4(), Qt = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3();
+  const M = new THREE.Matrix4();
+  const Qt = new THREE.Quaternion();
+  const S = new THREE.Vector3();
+  const P = new THREE.Vector3();
   
   let validCount = 0; // Счетчик успешно размещенных деревьев
   
-  // Используем while вместо for, чтобы гарантировать нужное количество деревьев
-  // даже если некоторые точки попадут в реку
+  // Используем while, чтобы гарантировать ровно N деревьев, 
+  // даже если некоторые попытки попадут в реку
   while(validCount < N) {
     let a = rr(0, Math.PI*2);
     let d = rr(18, 80);
     
-    // Исключаем зону перед домом для камеры
+    // Исключаем зону перед домом для камеры (старая логика)
     if(a > -1 && a < 1 && d > 20) d += 30; 
     
     const x = Math.cos(a) * d;
@@ -319,11 +330,13 @@ const trees = new THREE.Group(); scene.add(trees);
     const s = rr(.75, 1.7);
     
     // === ФИЛЬТР РУСЛА РЕКИ ===
-    // Река находится на Z ≈ -60, ширина русла ≈ 20-25 единиц
+    // Река находится на Z ≈ -60. Ширина русла около 20-25 единиц.
+    // Если точка попадает в этот диапазон, пропускаем её.
     const distToRiver = Math.abs(z - (-60));
-    if(distToRiver < 15) continue; // Пропускаем эту итерацию, если попали в воду
+    if(distToRiver < 15) continue; 
     // ==========================
     
+    // Размещаем дерево только если оно НЕ в реке
     for(let k=0; k<3; k++){
       P.set(x, (1.1 + k*1.35)*s, z); 
       S.set(s,s,s);
@@ -334,8 +347,11 @@ const trees = new THREE.Group(); scene.add(trees);
     validCount++;
   }
   
+  // Обновляем матрицы инстансов
   inst.forEach(m => m.instanceMatrix.needsUpdate = true);
 }
+
+// Анимация появления леса
 reveal(trees, .6, {dur:2.6, mode:'rise', dist:4});
 /* ═══════════════════════════════════════════════════════════════
    СВЕТЯЩИЙСЯ ПУТЬ И ЧАСТИЦЫ (ИСПРАВЛЕНО)
