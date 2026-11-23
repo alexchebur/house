@@ -240,7 +240,7 @@ for(let i=0; i<pos.count; i++){
   z *= clamp01((dHome - RELIEF.padR) / 14);   // 0 у дома → 1 на удалении
 
   // 3. Русло реки: smoothstep вместо излома на границе
-  const dRiver = Math.abs(y - RIVER_Z);
+  const dRiver = Math.abs(y + RIVER_Z);   // = |localY − 60| → worldZ = −60 ✓
   const bank = 1 - clamp01((dRiver - RELIEF.bedW) / (RELIEF.bankW - RELIEF.bedW));
   const bed  = 1 - clamp01(dRiver / RELIEF.bedW);
   const sm = t => t*t*(3-2*t);                // сглаживание входа/выхода
