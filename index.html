@@ -281,26 +281,62 @@ for(let i=0;i<12;i++){
 }
 reveal(hills,.2,{dur:2.4,mode:'fade'}); hills.children.forEach(c=>{c.material.transparent=true;});
 
+/* ═══════════════════════════════════════════════════════════════
+   ДЕРЕВЬЯ (С ФИЛЬТРОМ РУСЛА РЕКИ)
+   ═══════════════════════════════════════════════════════════════ */
 const trees = new THREE.Group(); scene.add(trees);
 {
-  const N = MOBILE?40:80, mat=new THREE.MeshStandardMaterial({color:C.fir, roughness:.9, flatShading:true});
-  const tiers=[new THREE.ConeGeometry(1.5,2.4,7),new THREE.ConeGeometry(1.15,2.1,7),new THREE.ConeGeometry(.75,1.7,7)];
-  const inst=tiers.map(g=>{const m=new THREE.InstancedMesh(g,mat,N); m.castShadow=!MOBILE; trees.add(m); return m;});
-  const M=new THREE.Matrix4(), Qt=new THREE.Quaternion(), S=new THREE.Vector3(), P=new THREE.Vector3();
-  for(let i=0;i<N;i++){
-    let a=rr(0,Math.PI*2), d=rr(18,80);
-    if(a > -1 && a < 1 && d > 20) d+=30; 
-    const x=Math.cos(a)*d, z=Math.sin(a)*d-10, s=rr(.75,1.7);
-    for(let k=0;k<3;k++){
-      P.set(x, (1.1+k*1.35)*s, z); S.set(s,s,s);
-      Qt.setFromAxisAngle(new THREE.Vector3(0,1,0), rr(0,6.28));
-      inst[k].setMatrixAt(i, M.compose(P,Qt,S));
+  const N = MOBILE ? 40 : 80;
+  const mat = new THREE.MeshStandardMaterial({color:C.fir, roughness:.9, flatShading:true});
+  const tiers = [
+    new THREE.ConeGeometry(1.5, 2.4, 7),
+    new THREE.ConeGeometry(1.15, 2.1, 7),
+    new THREE.ConeGeometry(.75, 1.7, 7)
+  ];
+  
+  const inst = tiers.map(g => {
+    const m = new THREE.InstancedMesh(g, mat, N); 
+    m.castShadow = !MOBILE; 
+    trees.add(m); 
+    return m;
+  });
+  
+  const M = new THREE.Matrix4(), Qt = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3();
+  
+  let validCount = 0; // Счетчик успешно размещенных деревьев
+  
+  // Используем while вместо for, чтобы гарантировать нужное количество деревьев
+  // даже если некоторые точки попадут в реку
+  while(validCount < N) {
+    let a = rr(0, Math.PI*2);
+    let d = rr(18, 80);
+    
+    // Исключаем зону перед домом для камеры
+    if(a > -1 && a < 1 && d > 20) d += 30; 
+    
+    const x = Math.cos(a) * d;
+    const z = Math.sin(a) * d - 10;
+    const s = rr(.75, 1.7);
+    
+    // === ФИЛЬТР РУСЛА РЕКИ ===
+    // Река находится на Z ≈ -60, ширина русла ≈ 20-25 единиц
+    const distToRiver = Math.abs(z - (-60));
+    if(distToRiver < 15) continue; // Пропускаем эту итерацию, если попали в воду
+    // ==========================
+    
+    for(let k=0; k<3; k++){
+      P.set(x, (1.1 + k*1.35)*s, z); 
+      S.set(s,s,s);
+      Qt.setFromAxisAngle(new THREE.Vector3(0,1,0), rr(0, 6.28));
+      inst[k].setMatrixAt(validCount, M.compose(P, Qt, S));
     }
+    
+    validCount++;
   }
-  inst.forEach(m=>m.instanceMatrix.needsUpdate=true);
+  
+  inst.forEach(m => m.instanceMatrix.needsUpdate = true);
 }
-reveal(trees,.6,{dur:2.6,mode:'rise',dist:4});
-
+reveal(trees, .6, {dur:2.6, mode:'rise', dist:4});
 /* ═══════════════════════════════════════════════════════════════
    СВЕТЯЩИЙСЯ ПУТЬ И ЧАСТИЦЫ (ИСПРАВЛЕНО)
    ═══════════════════════════════════════════════════════════════ */
@@ -605,22 +641,29 @@ canvas.addEventListener('wheel',e=>{ if(!look.on)return; e.preventDefault(); loo
 addEventListener('resize',()=>{ renderer.setSize(innerWidth,innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); });
 
 /* ═══════════════════════════════════════════════════════════════
-   УПРАВЛЕНИЕ СКОРОСТЬЮ
+   УПРАВЛЕНИЕ СКОРОСТЬЮ И ЦИКЛОМ
    ═══════════════════════════════════════════════════════════════ */
-// Множитель скорости: 1 = нормально, 2 = в 2 раза быстрее, 0.5 = в 2 раза медленнее
-// Можно задать через URL: ?speed=2
-const SPEED = parseFloat(Q.get('speed') || '2');
+// Множитель скорости: 1 = норма, 2 = x2 быстрее. 
+// По умолчанию 1, чтобы не проскакивать важные детали.
+const SPEED = parseFloat(Q.get('speed') || '1');
 
 function tick(now){
   const dt = Math.min(.05, (now - prev) / 1000); 
   prev = now;
+  
   if(playing && !look.on){ 
-    time += dt * SPEED;  // ← ВОТ ЗДЕСЬ применяем множитель
+    time += dt * SPEED;
+    
+    // Логика завершения: останавливаемся на DUR, а не перезапускаем
     if(time >= DUR){ 
-      if(LOOP) time = 0; 
-      else { time = DUR; setPlay(false); } 
+      time = DUR;           // Фиксируем на последнем кадре
+      setPlay(false);       // Ставим на паузу
+      // Гарантируем видимость финального титра
+      document.getElementById('endcard').classList.add('show');
+      return;               // Прерываем цикл, чтобы не рендерить лишний кадр
     } 
   }
+  
   applyTime(time);
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
