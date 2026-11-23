@@ -403,7 +403,70 @@ const hall = new THREE.Mesh(new THREE.BoxGeometry(20, 6, 10), new THREE.MeshStan
 hall.position.set(0, 3, 6); gesGroup.add(hall);
 const brandBox = new THREE.Mesh(new THREE.BoxGeometry(18, 0.5, 0.5), new THREE.MeshBasicMaterial({color:C.warm}));
 brandBox.position.set(0, 6, 6.1); gesGroup.add(brandBox);
+/* ═══════════════════════════════════════════════════════════════
+   ВЕКТОРНАЯ НАДПИСЬ «ГЭС» НА КРОВЛЕ МАШИННОГО ЗАЛА
+   Вставить сразу после создания gesGroup / brandBox
+   ═══════════════════════════════════════════════════════════════ */
 
+// ── Векторные контуры букв (система координат: высота 1.0, ширина ~0.72) ──
+function glyphGES(ch){
+  const s = new THREE.Shape();
+  const hole = pts => { const p=new THREE.Path(); pts.forEach(([x,y],i)=> i?p.lineTo(x,y):p.moveTo(x,y)); p.closePath(); return p; };
+
+  if(ch === 'Г'){                       // г-образный силуэт
+    [[0,0],[.20,0],[.20,.80],[.72,.80],[.72,1],[0,1]].forEach(([x,y],i)=> i?s.lineTo(x,y):s.moveTo(x,y));
+    s.closePath();
+  }
+  else if(ch === 'Э'){                  // зеркальная С + средняя перекладина
+    [[.72,0],[0,0],[0,1],[.72,1],[.72,.80],[.20,.80],[.20,.60],[.58,.60],
+     [.58,.40],[.20,.40],[.20,.20],[.72,.20]].forEach(([x,y],i)=> i?s.lineTo(x,y):s.moveTo(x,y));
+    s.closePath();
+  }
+  else if(ch === 'С'){                  // С с внутренним вырезом (hole)
+    [[.72,0],[0,0],[0,1],[.72,1],[.72,.80],[.20,.80],[.20,.20],[.72,.20]]
+      .forEach(([x,y],i)=> i?s.lineTo(x,y):s.moveTo(x,y));
+    s.closePath();
+  }
+  return s;
+}
+
+const GES_LABEL = (()=>{
+  const TEXT   = 'ГЭС';
+  const LETTER_H = 3.2;      // высота букв в метрах сцены
+  const GAP      = 0.22;     // межбуквенный просвет (в долях высоты)
+  const ADVANCE  = 0.72 + GAP;
+  const THICK    = 0.06;     // толщина «плёнки» над кровлей
+
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0xf4f8fc, roughness:.45, metalness:.05,
+    emissive: C.warm, emissiveIntensity: 0,      // подсветится в финале
+    side: THREE.DoubleSide
+  });
+
+  const grp = new THREE.Group();
+  const totalW = (TEXT.length*ADVANCE - GAP) * LETTER_H;
+
+  [...TEXT].forEach((ch,i)=>{
+    const geo = new THREE.ExtrudeGeometry(glyphGES(ch), {depth:THICK, bevelEnabled:false, curveSegments:4});
+    geo.scale(LETTER_H, LETTER_H, 1);
+    const m = new THREE.Mesh(geo, mat);
+    m.position.x = i*ADVANCE*LETTER_H - totalW/2;
+    grp.add(m);
+  });
+
+  // Кладём буквы на ГОРИЗОНТАЛЬНУЮ плоскость:
+  // ShapeGeometry лежит в XY → поворот -90° по X укладывает её в XZ,
+  // extrude (локальный +Z) становится мировым +Y, т.е. буквы «смотрят» вверх.
+  grp.rotation.x = -Math.PI/2;
+
+  // Позиция: верхняя грань машинного зала.
+  // hall: BoxGeometry(20,6,10) at (0,3,6) → верх y=6, z от 1 до 11.
+  grp.position.set(0, 6.04, 6.5);
+
+  grp.userData.mat = mat;
+  gesGroup.add(grp);
+  return grp;
+})();
 /* ДОМ */
 const house = new THREE.Group(); scene.add(house);
 const W=9.5, D=5.2, R=.19, ROWS=20, STEP=R*2*.92;
