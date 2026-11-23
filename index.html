@@ -874,23 +874,14 @@ function applyTime(t){
   // Камера
   const s=shot(t);
   camera.fov = s.f; camera.updateProjectionMatrix();
-  if(look.on){
-    const off=new THREE.Vector3().subVectors(s.p,s.l);
-    const sph=new THREE.Spherical().setFromVector3(off);
-    sph.theta += look.az; sph.phi = THREE.MathUtils.clamp(sph.phi+look.pol,.18,1.48);
-    sph.radius *= look.dist;
-    camera.position.copy(s.l).add(new THREE.Vector3().setFromSpherical(sph));
-    camera.lookAt(s.l);
-  }else{
   // Лёгкий параллакс: hover + перетаскивание дают лишь малый сдвиг ракурса,
   // анимация никогда не останавливается от касаний/кликов.
-      camera.position.set(
-        s.p.x + Math.sin(t*.35)*.28 + mouse.x*.9 + nudge.x*1.4,
-        s.p.y + Math.cos(t*.27)*.18 - mouse.y*.5 - nudge.y*.9,
-        s.p.z + Math.sin(t*.21)*.22
-      );
-      camera.lookAt(s.l);
-  }
+  camera.position.set(
+    s.p.x + Math.sin(t*.35)*.28 + mouse.x*.9 + nudge.x*1.4,
+    s.p.y + Math.cos(t*.27)*.18 - mouse.y*.5 - nudge.y*.9,
+    s.p.z + Math.sin(t*.21)*.22
+  );
+  camera.lookAt(s.l);
   updateUI(t);
 }
 
