@@ -60,6 +60,46 @@
   #hint{position:absolute;right:calc(22px + var(--sa-r));bottom:calc(96px + var(--sa-b));text-align:right;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:rgba(238,244,250,.34);opacity:0;animation:fadeIn 1s 1.6s forwards}
   #load{position:fixed;inset:0;z-index:5;display:grid;place-items:center;background:var(--deep);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink);transition:opacity .6s}
   #load.gone{opacity:0;pointer-events:none}
+
+  /* ── ПЛАШКА ДВУХ КОНЦЕПЦИЙ (финальный блок) ─────────────────── */
+  #concepts{
+    position:absolute;left:50%;top:47%;transform:translate(-50%,-50%) translateY(26px);
+    width:min(880px,calc(100vw - 48px - var(--sa-l) - var(--sa-r)));
+    max-height:calc(100vh - 210px - var(--sa-b));overflow-y:auto;overscroll-behavior:contain;
+    padding:22px 26px 20px;border-radius:18px;border:1px solid var(--line);
+    background:rgba(11,28,46,.55);backdrop-filter:blur(14px) saturate(125%);-webkit-backdrop-filter:blur(14px);
+    opacity:0;pointer-events:none;transition:opacity .9s ease,transform .9s ease;
+    scrollbar-width:thin;scrollbar-color:rgba(238,244,250,.25) transparent;
+  }
+  #concepts.in{opacity:1;transform:translate(-50%,-50%);pointer-events:auto}
+  #concepts .ck{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--warm-soft);text-align:center;margin-bottom:14px}
+  #concepts .cols{display:flex;gap:0;align-items:stretch}
+  #concepts .col{flex:1 1 0;min-width:0;padding:2px 20px}
+  #concepts .divider{width:1px;background:linear-gradient(180deg,transparent,var(--warm),transparent);transform:scaleY(0);transform-origin:top;transition:transform 1.4s .5s cubic-bezier(.22,1,.36,1)}
+  #concepts.in .divider{transform:scaleY(1)}
+  #concepts h4{font-family:var(--serif);font-weight:400;margin:0 0 2px;font-size:clamp(19px,3.4vw,26px);letter-spacing:.04em}
+  #concepts .tag{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--warm-soft);margin-bottom:10px}
+  #concepts .lead{margin:0 0 10px;font-size:clamp(11.5px,2.6vw,13.5px);line-height:1.55;color:var(--snow)}
+  #concepts ul{list-style:none;margin:0;padding:0}
+  #concepts li{position:relative;padding-left:16px;margin-bottom:7px;font-size:clamp(10.5px,2.4vw,12.5px);line-height:1.5;color:var(--ink)}
+  #concepts li::before{content:"";position:absolute;left:0;top:.52em;width:7px;height:2px;background:var(--warm);border-radius:1px}
+  #concepts li b{color:var(--snow);font-weight:600}
+  /* каскадное появление строк: задержки задаются из JS через --d */
+  #concepts .rise{opacity:0;transform:translateY(12px);transition:opacity .7s ease var(--d,0s),transform .7s cubic-bezier(.22,1,.36,1) var(--d,0s)}
+  #concepts.in .rise{opacity:1;transform:none}
+  /* мягкое «дыхание» тёплой линии под шапкой */
+  #concepts .pulse{height:2px;width:56px;margin:0 auto 16px;background:linear-gradient(90deg,var(--warm),var(--warm-soft));border-radius:2px;animation:cPulse 3.2s ease-in-out infinite}
+  @keyframes cPulse{0%,100%{opacity:.55;transform:scaleX(.8)}50%{opacity:1;transform:scaleX(1)}}
+  @media (max-width:640px){
+    #concepts{top:44%;padding:14px 14px 12px;width:calc(100vw - 28px - var(--sa-l) - var(--sa-r));max-height:calc(100vh - 190px - var(--sa-b))}
+    #concepts .cols{flex-direction:column;gap:12px}
+    #concepts .col{padding:0 2px}
+    #concepts .divider{width:auto;height:1px;background:linear-gradient(90deg,transparent,var(--warm),transparent);transform:scaleX(0);transform-origin:left}
+    #concepts.in .divider{transform:scaleX(1)}
+    #concepts li{margin-bottom:5px}
+    #concepts .ck{margin-bottom:10px}
+  }  
+  
   @keyframes fadeIn{to{opacity:1}}
   @media (max-width:640px){
     #caption{left:calc(14px + var(--sa-l));right:calc(14px + var(--sa-r));max-width:none;bottom:calc(104px + var(--sa-b));padding:11px 13px}
@@ -75,6 +115,33 @@
   <div id="brand"><div class="mark">Т+</div><div class="txt"><b>Т Плюс</b>свет · тепло</div></div>
   <div id="prolog"><div class="k">Свердловская область · Урал</div><h1>ВЕРХОТУРЬЕ</h1><p>Деревянный город, который держится на людях</p></div>
   <div id="endcard"><h2>Верхотурская ГЭС</h2><div class="rule"></div><p>Энергия, сохраняющая историю</p></div>
+  <div id="concepts" aria-label="Две концепции дома">
+    <div class="ck rise">Две концепции · один дом · ПАО «Т Плюс»</div>
+    <div class="pulse rise"></div>
+    <div class="cols">
+      <div class="col">
+        <h4 class="rise">Верстовой дом</h4>
+        <div class="tag rise">Дом живых ощущений энергии</div>
+        <p class="lead rise">Оживший дом, который делится живыми ощущениями. «Верста» — метафора пути энергии: от воды Верхотурской ГЭС — к свету и теплу этого дома.</p>
+        <ul>
+          <li class="rise"><b>Экспозиция пути:</b> вода → свет → тепло. Статичные экспонаты с подсветкой и точечными механическими интерактивами.</li>
+          <li class="rise"><b>Макет Верхотурской ГЭС</b> — сердце экспозиции, связывает дом с рекой и энергией места.</li>
+          <li class="rise"><b>Лекторий-трансформер:</b> акустика, свет, медиа и устные истории — от собраний до камерных лекций.</li>
+        </ul>
+      </div>
+      <div class="divider"></div>
+      <div class="col">
+        <h4 class="rise">Верхотурская толока</h4>
+        <div class="tag rise">Дом общего дела</div>
+        <p class="lead rise">Толока — уральская традиция всем миром делать общее дело. Дом восстановлен сообща и продолжает жить как штаб совместных усилий города.</p>
+        <ul>
+          <li class="rise"><b>Штаб волонтёров и мастеров:</b> открытая мастерская, календарь толок, доска добрых дел.</li>
+          <li class="rise"><b>Уголок спасённых вещей:</b> наличники, двери, ставни из разобранных домов — у каждой вещи своя история.</li>
+          <li class="rise"><b>Зал собраний:</b> лекции о ремесле, встречи соседей, планирование новых толок.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
   <div id="caption"><div class="k"></div><h3></h3><p></p></div>
   <div id="hint">space — пауза · r — заново</div>
   <div id="controls">
@@ -106,7 +173,7 @@ const C = {
   carve:0xf3e6d0, roof:0x4b4640, brick:0x9c5b4a, stone:0x8a8f96, fir:0x2c4a44,
   water:0x1a3b5c, concrete:0x8a9bb0
 };
-const DUR = 56; 
+const DUR = 68; // было 56; +12с на финальную плашку концепций (CONCEPT_IN/HOLD ниже синхронизированы)
 const CH = [
   {t:0.0, k:'Пролог', h:'Верхотурье', p:'Город-заповедник деревянного зодчества.'},
   {t:3.6, k:'01 · Основание', h:'Камень и место', p:'Фундамент на валунах — память о месте.'},
@@ -116,8 +183,16 @@ const CH = [
   {t:25.0, k:'05 · Тепло', h:'Дом оживает', p:'Свет в окнах, дым над трубой.'}, // Вернули оригинальный тайминг
   {t:30.2, k:'06 · Толока', h:'Верхотурская толока', p:'Соседи, волонтёры, мастера.'},
   {t:36.0, k:'07 · Путь', h:'Энергия места', p:'От верстового столба — к сердцу города.'},
-  {t:48.0, k:'Финал', h:'Верхотурская ГЭС', p:'Энергия, сохраняющая историю.'}
+  {t:48.0, k:'Финал', h:'Верхотурская ГЭС', p:'Энергия, сохраняющая историю.'},
+  {t:52.0, k:'08 · Концепции', h:'Два пути одного дома', p:'«Верстовой дом» и «Верхотурская толока».'}
 ];
+/* ── ФИНАЛЬНЫЙ БЛОК: ДВЕ КОНЦЕПЦИИ ─────────────────────────────
+   Тайминги в секундах шкалы. Плашка держится дольше motion-кейфреймов,
+   чтобы текст успели прочитать. Крутите CONCEPT_HOLD под темп чтения. */
+const CONCEPT_IN   = 52.0;   // когда плашка начинает появляться
+const CONCEPT_HOLD = 14.0;   // сколько держим полностью видимой
+const CONCEPT_OUT  = CONCEPT_IN + CONCEPT_HOLD;      // начало ухода (66)
+const DUR_EXT      = CONCEPT_OUT + 2.0;              // новый конец ролика (68)
 const Q = new URLSearchParams(location.search);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const MOBILE = innerWidth < 760 || /Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -574,7 +649,8 @@ const SHOTS=[
   {t:30.2, p:[0, 12, 28], l:[0, 4, 0], f:38}, 
   {t:36, p:[5, 8, 15], l:[0, 4, 0], f:50}, 
   {t:42, p:[10, 6, -20], l:[0, 2, -30], f:45}, 
-  {t:48, p:[0, 12, -50], l:[0, 5, -60], f:40}, 
+  {t:48, p:[0, 12, -50], l:[0, 5, -60], f:40},
+  {t:52, p:[14, 10, -48], l:[0, 4, -60], f:41},   // уход в мягкий орбитальный дрейф под плашку
   {t:DUR, p:[20, 8, -55], l:[0, 4, -60], f:42}  
 ];
 const _p=new THREE.Vector3(), _l=new THREE.Vector3();
@@ -664,13 +740,25 @@ function applyTime(t){
        brandBox.material.color.setHex(C.warm);
     }
     
-    document.getElementById('endcard').classList.toggle('show', t > 50);
+    document.getElementById('endcard').classList.toggle('show', t > 50 && t < CONCEPT_IN - 0.8);
   } else {
     pathMesh.visible = false;
     particles.visible = false;
     gesGroup.visible = false;
   }
-
+  // ── Плашка двух концепций (после титра ГЭС) ──
+  const conceptsEl = document.getElementById('concepts');
+  const showConcepts = t >= CONCEPT_IN && t <= CONCEPT_OUT + 1.2;
+  if(showConcepts !== conceptsEl.classList.contains('in')){
+    conceptsEl.classList.toggle('in', showConcepts);
+    if(showConcepts){
+      // каскад: каждой .rise-строке своя задержка (простая, читаемая)
+      conceptsEl.querySelectorAll('.rise').forEach((n,i)=> n.style.setProperty('--d', (i*0.14)+'s'));
+      conceptsEl.scrollTop = 0;
+    }
+  }
+  // титр ГЭС уступает место плашке (перекрываем класс .show только в этом окне)
+  if(t >= CONCEPT_IN - 0.8) endcard.classList.remove('show');
   // Камера
   const s=shot(t);
   camera.fov = s.f; camera.updateProjectionMatrix();
@@ -696,8 +784,8 @@ CH.forEach((c,i)=>{const d=document.createElement('div'); d.className='dot'; d.s
 let lastCh=-1;
 function updateUI(t){
   let idx=0; for(let i=0;i<CH.length;i++) if(t>=CH[i].t) idx=i;
-  if(idx!==lastCh){ lastCh=idx; cap.classList.remove('in'); setTimeout(()=>{capK.textContent=CH[idx].k; capH.textContent=CH[idx].h; capP.textContent=CH[idx].p; if(idx>0 && t<49) cap.classList.add('in');},180); [...dots.children].forEach((d,i)=>d.classList.toggle('on',i===idx)); }
-  cap.classList.toggle('in', idx>0 && t<49);
+  if(idx!==lastCh){ lastCh=idx; cap.classList.remove('in'); setTimeout(()=>{capK.textContent=CH[idx].k; capH.textContent=CH[idx].h; capP.textContent=CH[idx].p; if(idx>0 && t<49 || t>=CONCEPT_IN) cap.classList.add('in');},180); [...dots.children].forEach((d,i)=>d.classList.toggle('on',i===idx)); }
+  cap.classList.toggle('in', idx>0 && t<49 || t>=CONCEPT_IN);
   prolog.classList.toggle('hide', t>3.0);
   fill.style.width=(t/DUR*100)+'%';
 }
