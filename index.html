@@ -564,7 +564,25 @@ const GES_LABEL = (()=>{
   gesGroup.add(grp);
   return grp;
 })();
-
+/* ── ПЛАВНОЕ ПРОЯВЛЕНИЕ ГЭС (fade-in + подъём из воды) ──────────
+   Собираем ВСЕ материалы группы один раз; дальше в applyTime
+   управляем их opacity чистой функцией времени — перемотка работает. */
+const GES_FADE_T0 = 39.0;   // начало проявления (путь уже дорос до реки)
+const GES_FADE_DUR = 8.0;   // длительность, сек шкалы
+const GES_BASE_Y = -4.5;    // финальная высота группы
+const GES_RISE = 1.8;       // насколько глубоко она «сидит в воде» до подъёма
+const gesMats = [];
+gesGroup.traverse(o=>{
+  if(o.material){
+    const ms = Array.isArray(o.material) ? o.material : [o.material];
+    for(const m of ms){
+      if(gesMats.includes(m)) continue;
+      m.transparent = true;
+      m.opacity = 0;
+      gesMats.push(m);
+    }
+  }
+});
 // Мировой центр надписи (для финальной камеры): gesGroup(0,-4.5,-60) + grp(0,6.04,6.5)
 const GES_LABEL_WORLD = new THREE.Vector3(0, -4.5 + 6.04 + .02, -60 + 6.5 - 1.6);
 
@@ -769,7 +787,12 @@ function applyTime(t){
   if(t > 36) {
     pathMesh.visible = true;
     particles.visible = true;
-    gesGroup.visible = true;
+
+    // ГЭС: не появляется мгновенно, а проявляется и поднимается из воды
+    const gesE = E.inOutCubic(clamp01((t - GES_FADE_T0) / GES_FADE_DUR));
+    gesGroup.visible = gesE > 0.001;
+    gesGroup.position.y = GES_BASE_Y - GES_RISE * (1 - gesE);
+    for(const m of gesMats){ m.opacity = gesE; m.depthWrite = gesE > 0.5; }
     
     const pathProgress = clamp01((t - 36) / 6); 
     pathMat.opacity = pathProgress * 0.8;
