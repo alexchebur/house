@@ -441,15 +441,15 @@ scene.add(pathMesh);
 
 // ── ЧАСТИЦЫ-АТОМЫ · РУЧКИ НАСТРОЙКИ ────────────────────────────
 const FLOW = {
-  count:    MOBILE ? 70 : 110,  // сколько атомов на линии (больше = плотнее цепь)
-  traverse: 32,                 // сек шкалы на полный путь ГЭС→дом (общий темп потока)
-  wobble:   0.004,              // локальное «дыхание» скорости (без разбегания в кучи)
-  start:    38.0,               // когда сеть «включается» (дорожка уже доросла)
-  fadeIn:   3.0,                // плавный набор яркости сети после start
-  jitter:   0.35,               // боковое дрожание, м (0 = строгая нить)
-  bob:      0.25,               // вертикальное покачивание, м
-  lift:     0.5,                // высота цепи над трубкой пути, м
-  pulse:    1.6                 // скорость «дыхания» яркости отдельных атомов
+  count:    MOBILE ? 70 : 110,
+  traverse: 32,
+  wobble:   0.004,
+  start:    38.0,
+  fadeIn:   3.0,
+  jitter:   0.35,
+  bob:      0.25,
+  lift:     0.5,
+  pulse:    1.6
 };
 const partCount = FLOW.count;
 const partGeo = new THREE.BufferGeometry();
@@ -459,22 +459,16 @@ const partData = [];
 
 const _cWarm = new THREE.Color(C.warm), _cSoft = new THREE.Color(C.warmSoft);
 for(let i=0; i<partCount; i++){
-  // Равномерная фаза по всей длине + детерминированный сдвиг:
-  // атомы сразу распределены по линии, никогда не сбиваются в кучу
   const phase = (i + rnd()*0.8) / partCount;
-  partData.push({
-    phase,                                   // стартовая позиция на кривой [0..1)
-    ph: rr(0, Math.PI*2),                    // фаза дрожания/пульсации
-    mix: rnd()                               // оттенок между warm и warmSoft
-  });
+  partData.push({ phase, ph: rr(0, Math.PI*2), mix: rnd() });
   const c = _cWarm.clone().lerp(_cSoft, partData[i].mix);
   partCol[i*3]=c.r; partCol[i*3+1]=c.g; partCol[i*3+2]=c.b;
   partPos[i*3]=0; partPos[i*3+1]=-100; partPos[i*3+2]=0;
 }
 partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
-partGeo.setAttribute('color', new THREE.BufferAttribute(partCol, 3));
+partGeo.setAttribute('color', new THREE.BufferAttribute(partCol, 3));   // ← без него новый цикл падает
 const particles = new THREE.Points(partGeo, new THREE.PointsMaterial({
-  size:0.55, transparent:true, opacity:0, vertexColors:true,
+  size:0.55, transparent:true, opacity:0, vertexColors:true,            // ← vertexColors обязателен
   blending:THREE.AdditiveBlending, depthWrite:false
 }));
 particles.visible = false;
