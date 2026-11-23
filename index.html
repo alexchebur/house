@@ -485,16 +485,27 @@ function applyTime(t){
     pathMat.opacity = pathProgress * 0.8;
     particles.material.opacity = pathProgress * 0.8;
     
-    // Частицы летят ОТ ГЭС (t=1) К ДОМУ (t=0)
+    // ... внутри applyTime(t), в блоке if(t > 36) ...
+    
+    // Обновление частиц: Движение ОТ ГЭС К ДОМУ
     const positions = particles.geometry.attributes.position.array;
     for(let i=0; i<partCount; i++){
-      partData[i].t -= partData[i].speed * 2.0; 
+      // Уменьшаем t, чтобы двигаться от 1 (ГЭС) к 0 (Дом)
+      partData[i].t -= partData[i].speed;
+      
+      // Если долетели до дома, возвращаем на старт (к ГЭС)
       if(partData[i].t < 0) partData[i].t = 1.0;
       
+      // Проверяем, "дорос" ли путь до этой точки
+      // pathProgress идет от 0 до 1. Точка пути видна, если ее t <= pathProgress
+      // Но так как мы движемся в обратную сторону, условие такое:
       if(partData[i].t > (1 - pathProgress)){ 
+         // Скрываем частицу, если путь до нее еще не дошел
          positions[i*3+1] = -100; 
       } else {
+        // Берем точку на кривой
         const pt = curve.getPointAt(partData[i].t);
+        // Добавляем легкое дрожание
         positions[i*3] = pt.x + Math.sin(t*5+i)*0.2; 
         positions[i*3+1] = pt.y + 0.5 + Math.cos(t*3+i)*0.2;
         positions[i*3+2] = pt.z;
