@@ -609,7 +609,7 @@ function applyTime(t){
   // Люди (Толока)
   for(const p of people){
     const e=clamp01((t-p.t0)/p.dur);
-    p.g.visible = e>0 && t < 36; 
+    p.g.visible = e > 0; 
     if(!p.g.visible) continue;
     const k=E.inOutCubic(e);
     p.g.position.lerpVectors(p.from,p.to,k);
