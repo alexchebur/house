@@ -882,8 +882,14 @@ function applyTime(t){
     camera.position.copy(s.l).add(new THREE.Vector3().setFromSpherical(sph));
     camera.lookAt(s.l);
   }else{
-    camera.position.set(s.p.x + Math.sin(t*.35)*.28 + mouse.x*.9, s.p.y + Math.cos(t*.27)*.18 - mouse.y*.5, s.p.z + Math.sin(t*.21)*.22);
-    camera.lookAt(s.l);
+  // Лёгкий параллакс: hover + перетаскивание дают лишь малый сдвиг ракурса,
+  // анимация никогда не останавливается от касаний/кликов.
+      camera.position.set(
+        s.p.x + Math.sin(t*.35)*.28 + mouse.x*.9 + nudge.x*1.4,
+        s.p.y + Math.cos(t*.27)*.18 - mouse.y*.5 - nudge.y*.9,
+        s.p.z + Math.sin(t*.21)*.22
+      );
+      camera.lookAt(s.l);
   }
   updateUI(t);
 }
@@ -952,7 +958,10 @@ function tick(now){
   const dt = Math.min(.05, (now - prev) / 1000); 
   prev = now;
   
-  if(playing && !look.on){ 
+  // плавный возврат параллакса к нулю, когда палец/кнопка отпущены
+  if(!nudge.drag){ const k=Math.exp(-dt*2.2); nudge.x*=k; nudge.y*=k; }
+
+  if(playing){
     time += dt * SPEED;
     if(time >= DUR){ 
       time = DUR;
@@ -968,7 +977,7 @@ function tick(now){
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
 }
-if(Q.get('look')==='1') toggleLook(true);
+
 setPlay(playing); applyTime(time);
 requestAnimationFrame(tick);
 setTimeout(()=>el('load').classList.add('gone'),350);
