@@ -398,7 +398,7 @@ dam.position.y = 4; gesGroup.add(dam);
 const hall = new THREE.Mesh(new THREE.BoxGeometry(20, 6, 10), new THREE.MeshStandardMaterial({color:0x556677}));
 hall.position.set(0, 3, 6); gesGroup.add(hall);
 const brandBox = new THREE.Mesh(new THREE.BoxGeometry(18, 0.5, 0.5), new THREE.MeshBasicMaterial({color:C.warm}));
-brandBox.position.set(0, 6, 6.1); gesGroup.add(brandBox);
+brandBox.position.set(0, 6.01, 11.0);   // прямо на передней грани, не над крышей
 /* ═══════════════════════════════════════════════════════════════
    ВЕКТОРНАЯ НАДПИСЬ «ГЭС» НА КРОВЛЕ МАШИННОГО ЗАЛА
    Вставить сразу после создания gesGroup / brandBox
