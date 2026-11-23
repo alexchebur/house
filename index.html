@@ -922,21 +922,26 @@ el('bReplay').onclick = () => {
   u.searchParams.delete('t');
   location.href = u.toString();
 };
-el('bar').addEventListener('pointerdown',e=>{ const r=e.currentTarget.getBoundingClientRect(); toggleLook(false); setTime((e.clientX-r.left)/r.width*DUR); });
-addEventListener('keydown',e=>{ if(e.code==='Space'){e.preventDefault(); if(look.on)toggleLook(false); setPlay(!playing);} if(e.key==='r'||e.key==='R'){toggleLook(false);setTime(0);setPlay(true);} if(e.key==='f'||e.key==='F')toggleLook(!look.on); });
-const look={on:false,az:0,pol:0,dist:1,drag:false,px:0,py:0};
+el('bar').addEventListener('pointerdown',e=>{ const r=e.currentTarget.getBoundingClientRect(); setTime((e.clientX-r.left)/r.width*DUR); });
+addEventListener('keydown',e=>{ if(e.code==='Space'){e.preventDefault(); setPlay(!playing);} if(e.key==='r'||e.key==='R'){setTime(0);setPlay(true);} });
+
+/* ── МЯГКИЙ ПАРАЛЛАКС ВМЕСТО ОРБИТЫ ─────────────────────────────
+   Клик/тап и перетаскивание НЕ останавливают ролик и не включают
+   режим осмотра. Зажатое движение лишь слегка смещает камеру
+   (макс ~3° ракурса), после отпускания она плавно возвращается. */
 const mouse={x:0,y:0};
-function toggleLook(v){
-  look.on=v;
-  const bLook = el('bLook');                   // (исправлено: кнопки нет — не падаем)
-  if(bLook) bLook.classList.toggle('on',v);
-  if(v){ setPlay(false); look.az=0; look.pol=0; look.dist=1; } else setPlay(true);
-}
-canvas.addEventListener('pointerdown',e=>{ if(!look.on)toggleLook(true); look.drag=true; look.px=e.clientX; look.py=e.clientY; canvas.setPointerCapture(e.pointerId);});
-canvas.addEventListener('pointerup',()=>look.drag=false);
-canvas.addEventListener('pointermove',e=>{ mouse.x=(e.clientX/innerWidth-.5); mouse.y=(e.clientY/innerHeight-.5); if(!look.drag||!look.on)return; look.az -= (e.clientX-look.px)*.006; look.pol -= (e.clientY-look.py)*.004; look.pol=THREE.MathUtils.clamp(look.pol,-.7,.7); look.px=e.clientX; look.py=e.clientY; });
-canvas.addEventListener('wheel',e=>{ if(!look.on)return; e.preventDefault(); look.dist=THREE.MathUtils.clamp(look.dist*Math.exp(e.deltaY*.0011),.4,2.6);},{passive:false});
-addEventListener('resize',()=>{ renderer.setSize(innerWidth,innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); });
+const nudge={x:0,y:0,drag:false,px:0,py:0};
+const NUDGE_MAX = 1;                            // предел накопленного сдвига
+canvas.addEventListener('pointerdown',e=>{ nudge.drag=true; nudge.px=e.clientX; nudge.py=e.clientY; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointerup',()=>nudge.drag=false);
+canvas.addEventListener('pointercancel',()=>nudge.drag=false);
+canvas.addEventListener('pointermove',e=>{
+  mouse.x=(e.clientX/innerWidth-.5); mouse.y=(e.clientY/innerHeight-.5);
+  if(!nudge.drag) return;
+  nudge.x = THREE.MathUtils.clamp(nudge.x - (e.clientX-nudge.px)*.004, -NUDGE_MAX, NUDGE_MAX);
+  nudge.y = THREE.MathUtils.clamp(nudge.y - (e.clientY-nudge.py)*.003, -NUDGE_MAX, NUDGE_MAX);
+  nudge.px=e.clientX; nudge.py=e.clientY;
+});
 
 /* ═══════════════════════════════════════════════════════════════
    УПРАВЛЕНИЕ СКОРОСТЬЮ И ЦИКЛОМ
