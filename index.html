@@ -553,11 +553,25 @@ canvas.addEventListener('pointermove',e=>{ mouse.x=(e.clientX/innerWidth-.5); mo
 canvas.addEventListener('wheel',e=>{ if(!look.on)return; e.preventDefault(); look.dist=THREE.MathUtils.clamp(look.dist*Math.exp(e.deltaY*.0011),.4,2.6);},{passive:false});
 addEventListener('resize',()=>{ renderer.setSize(innerWidth,innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); });
 
+/* ═══════════════════════════════════════════════════════════════
+   УПРАВЛЕНИЕ СКОРОСТЬЮ
+   ═══════════════════════════════════════════════════════════════ */
+// Множитель скорости: 1 = нормально, 2 = в 2 раза быстрее, 0.5 = в 2 раза медленнее
+// Можно задать через URL: ?speed=2
+const SPEED = parseFloat(Q.get('speed') || '1');
+
 function tick(now){
-  const dt=Math.min(.05,(now-prev)/1000); prev=now;
-  if(playing && !look.on){ time+=dt; if(time>=DUR){ if(LOOP) time=0; else {time=DUR; setPlay(false);} } }
+  const dt = Math.min(.05, (now - prev) / 1000); 
+  prev = now;
+  if(playing && !look.on){ 
+    time += dt * SPEED;  // ← ВОТ ЗДЕСЬ применяем множитель
+    if(time >= DUR){ 
+      if(LOOP) time = 0; 
+      else { time = DUR; setPlay(false); } 
+    } 
+  }
   applyTime(time);
-  renderer.render(scene,camera);
+  renderer.render(scene, camera);
   requestAnimationFrame(tick);
 }
 if(Q.get('look')==='1') toggleLook(true);
