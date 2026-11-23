@@ -395,7 +395,7 @@ const milepost = new THREE.Group();
   for(let i=0;i<7;i++){
     const seg = new THREE.Mesh(new THREE.BoxGeometry(SW, stripeH, SW), i%2 ? mWhite : mBlack);
     seg.position.y = stripeH*(i+.5);
-    seg.castShadow = !MOBILE;
+    seg.castShadow = false;
     milepost.add(seg);
   }
   // Скошенная шапка
