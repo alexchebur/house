@@ -831,7 +831,7 @@ function applyTime(t){
                + FLOW.wobble * Math.sin(t*0.7 + d.ph)) % 1;
       if(u < 0) u += 1;
       // Видимость: только на «доросшей» части пути (растёт от ГЭС к дому)
-      if(flowAge < 0 || u > (1 - pathProgress) + 0.001){
+      if(flowAge < 0 || u < (1 - pathProgress) - 0.001){
         positions[i*3+1] = -100;
         continue;
       }
