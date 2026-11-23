@@ -630,7 +630,8 @@ function applyTime(t){
     pathMat.opacity = pathProgress * 0.8;
     particles.material.opacity = pathProgress * 0.8;
     
-    // ... внутри applyTime(t), в блоке if(t > 36) ...
+    // Надпись «ГЭС» проявляется вместе с финальным титром
+    GES_LABEL.userData.mat.emissiveIntensity = clamp01((t-48)/2.5) * 0.55;
     
     // Обновление частиц: Движение ОТ ГЭС К ДОМУ
     const positions = particles.geometry.attributes.position.array;
