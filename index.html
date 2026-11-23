@@ -439,21 +439,43 @@ const pathMesh = new THREE.Mesh(tubeGeo, pathMat);
 pathMesh.visible = false;
 scene.add(pathMesh);
 
-// Частицы (ПРАВКА 6): реже (90 вместо 400), медленнее (~в 4 раза),
-// равномерно рассеяны по длине пути, а не скучены у ГЭС.
-const partCount = MOBILE ? 60 : 190;
+// ── ЧАСТИЦЫ-АТОМЫ · РУЧКИ НАСТРОЙКИ ────────────────────────────
+const FLOW = {
+  count:    MOBILE ? 70 : 110,  // сколько атомов на линии (больше = плотнее цепь)
+  traverse: 32,                 // сек шкалы на полный путь ГЭС→дом (общий темп потока)
+  wobble:   0.004,              // локальное «дыхание» скорости (без разбегания в кучи)
+  start:    38.0,               // когда сеть «включается» (дорожка уже доросла)
+  fadeIn:   3.0,                // плавный набор яркости сети после start
+  jitter:   0.35,               // боковое дрожание, м (0 = строгая нить)
+  bob:      0.25,               // вертикальное покачивание, м
+  lift:     0.5,                // высота цепи над трубкой пути, м
+  pulse:    1.6                 // скорость «дыхания» яркости отдельных атомов
+};
+const partCount = FLOW.count;
 const partGeo = new THREE.BufferGeometry();
 const partPos = new Float32Array(partCount*3);
-const partData = []; 
+const partCol = new Float32Array(partCount*3);
+const partData = [];
 
+const _cWarm = new THREE.Color(C.warm), _cSoft = new THREE.Color(C.warmSoft);
 for(let i=0; i<partCount; i++){
-  // Детерминированный равномерный разброс по всей кривой + свой темп
-  partData.push({t: rnd(), speed: 0.00011 + rnd()*0.0009});
+  // Равномерная фаза по всей длине + детерминированный сдвиг:
+  // атомы сразу распределены по линии, никогда не сбиваются в кучу
+  const phase = (i + rnd()*0.8) / partCount;
+  partData.push({
+    phase,                                   // стартовая позиция на кривой [0..1)
+    ph: rr(0, Math.PI*2),                    // фаза дрожания/пульсации
+    mix: rnd()                               // оттенок между warm и warmSoft
+  });
+  const c = _cWarm.clone().lerp(_cSoft, partData[i].mix);
+  partCol[i*3]=c.r; partCol[i*3+1]=c.g; partCol[i*3+2]=c.b;
   partPos[i*3]=0; partPos[i*3+1]=-100; partPos[i*3+2]=0;
 }
 partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
+partGeo.setAttribute('color', new THREE.BufferAttribute(partCol, 3));
 const particles = new THREE.Points(partGeo, new THREE.PointsMaterial({
-  color:C.warm, size:0.55, transparent:true, opacity:0, blending:THREE.AdditiveBlending
+  size:0.55, transparent:true, opacity:0, vertexColors:true,
+  blending:THREE.AdditiveBlending, depthWrite:false
 }));
 particles.visible = false;
 scene.add(particles);
@@ -800,22 +822,37 @@ function applyTime(t){
     
     GES_LABEL.userData.mat.emissiveIntensity = clamp01((t-48)/2.5) * 0.55;
     
-    // Обновление частиц: медленно, разреженно, ОТ ГЭС К ДОМУ (ПРАВКА 6)
+    // ── АТОМЫ СЕТИ: чистая функция времени (детерминировано при перемотке)
+    // Позиция = фаза − скорость·(t − start), зациклено через mod.
+    // Никаких накоплений по кадрам: пауза замораживает, seek корректен.
+    const flowAge = t - FLOW.start;
+    particles.material.opacity = pathProgress * 0.85 * clamp01(flowAge / FLOW.fadeIn);
     const positions = particles.geometry.attributes.position.array;
+    const colors = particles.geometry.attributes.color.array;
     for(let i=0; i<partCount; i++){
-      partData[i].t -= partData[i].speed;
-      if(partData[i].t < 0) partData[i].t += 1.0;   // плавный цикл без сброса в кучу
-      if(partData[i].t > (1 - pathProgress)){ 
-         positions[i*3+1] = -100; 
-      } else {
-        const pt = curve.getPointAt(partData[i].t);
-        positions[i*3] = pt.x + Math.sin(t*2.2+i)*0.12; 
-        positions[i*3+1] = pt.y + 0.5 + Math.cos(t*1.6+i)*0.12;
-        positions[i*3+2] = pt.z;
+      const d = partData[i];
+      // Общий темп потока + ограниченное покачивание фазы.
+      // Одинаковая базовая скорость у всех = цепь никогда не сбивается в кучи.
+      let u = (d.phase - (1/FLOW.traverse) * Math.max(0, flowAge)
+               + FLOW.wobble * Math.sin(t*0.7 + d.ph)) % 1;
+      if(u < 0) u += 1;
+      // Видимость: только на «доросшей» части пути (растёт от ГЭС к дому)
+      if(flowAge < 0 || u > (1 - pathProgress) + 0.001){
+        positions[i*3+1] = -100;
+        continue;
       }
+      const pt = curve.getPointAt(u);
+      positions[i*3]   = pt.x + Math.sin(t*1.3 + d.ph) * FLOW.jitter;
+      positions[i*3+1] = pt.y + FLOW.lift + Math.cos(t*0.9 + d.ph) * FLOW.bob;
+      positions[i*3+2] = pt.z + Math.sin(t*1.1 + d.ph*2) * FLOW.jitter * 0.6;
+      // «Дыхание» яркости: атомы мерцают вразнобой, сеть выглядит живой
+      const glow = 0.55 + 0.45 * Math.sin(t * FLOW.pulse + d.ph * 3);
+      colors[i*3]   = (_cWarm.r + (_cSoft.r-_cWarm.r)*d.mix) * glow;
+      colors[i*3+1] = (_cWarm.g + (_cSoft.g-_cWarm.g)*d.mix) * glow;
+      colors[i*3+2] = (_cWarm.b + (_cSoft.b-_cWarm.b)*d.mix) * glow;
     }
     particles.geometry.attributes.position.needsUpdate = true;
-    
+    particles.geometry.attributes.color.needsUpdate = true;
     if(t > 36 && t < 38) {
        brandBox.material.color.setHex(0xffffff);
     } else {
