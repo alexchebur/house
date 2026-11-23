@@ -472,6 +472,7 @@ const particles = new THREE.Points(partGeo, new THREE.PointsMaterial({
   blending:THREE.AdditiveBlending, depthWrite:false
 }));
 particles.visible = false;
+particles.frustumCulled = false;
 scene.add(particles);
 
 /* ═══════════════════════════════════════════════════════════════
