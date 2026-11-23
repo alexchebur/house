@@ -76,13 +76,13 @@
   <div id="prolog"><div class="k">Свердловская область · Урал</div><h1>ВЕРХОТУРЬЕ</h1><p>Деревянный город, который держится на людях</p></div>
   <div id="endcard"><h2>Верхотурская ГЭС</h2><div class="rule"></div><p>Энергия, сохраняющая историю</p></div>
   <div id="caption"><div class="k"></div><h3></h3><p></p></div>
-  <div id="hint">перетащите — осмотр · space — пауза</div>
+  <div id="hint">space — пауза · r — заново</div>
   <div id="controls">
     <div id="bar"><div class="track"></div><div class="fill"></div><div class="dots"></div></div>
     <div id="row">
       <button id="bPlay">⏸ Пауза</button>
       <button id="bReplay">↻ Заново</button>
-      <button id="bLook">Осмотр</button>
+   
       <div id="meta">motion concept · v1</div>
     </div>
   </div>
@@ -705,9 +705,14 @@ let time = parseFloat(Q.get('t')||'0')||0, playing=!REDUCED, prev=performance.no
 if(REDUCED){ time=DUR-2; }
 function setTime(v){ time=THREE.MathUtils.clamp(v,0,DUR); lastCh=-1; applyTime(time); }
 function setPlay(v){ playing=v; el('bPlay').textContent = v?'⏸ Пауза':'▶ Пуск'; el('bPlay').classList.toggle('on',!v); }
-el('bPlay').onclick=()=>{ if(look.on) toggleLook(false); setPlay(!playing); };
-el('bReplay').onclick=()=>{ toggleLook(false); setTime(0); setPlay(true); };
-el('bLook').onclick=()=>toggleLook(!look.on);
+el('bPlay').onclick = () => setPlay(!playing);
+
+// «Заново» — перезагрузка страницы с начала
+el('bReplay').onclick = () => {
+  const u = new URL(location.href);
+  u.searchParams.delete('t');   // сбрасываем ?t=…, если он был
+  location.href = u.toString(); // сохраняем ?loop= / ?speed=, если они были
+};
 el('bar').addEventListener('pointerdown',e=>{ const r=e.currentTarget.getBoundingClientRect(); toggleLook(false); setTime((e.clientX-r.left)/r.width*DUR); });
 addEventListener('keydown',e=>{ if(e.code==='Space'){e.preventDefault(); if(look.on)toggleLook(false); setPlay(!playing);} if(e.key==='r'||e.key==='R'){toggleLook(false);setTime(0);setPlay(true);} if(e.key==='f'||e.key==='F')toggleLook(!look.on); });
 const look={on:false,az:0,pol:0,dist:1,drag:false,px:0,py:0};
