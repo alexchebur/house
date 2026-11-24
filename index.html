@@ -155,6 +155,7 @@
           <li class="rise"><b>Экспозиция пути:</b> вода → свет → тепло. Статичные экспонаты с подсветкой и точечными механическими интерактивами.</li>
           <li class="rise"><b>Макет Верхотурской ГЭС</b> — сердце экспозиции, связывает дом с рекой и энергией места.</li>
           <li class="rise"><b>Лекторий-трансформер:</b> акустика, свет, медиа и устные истории — от собраний до камерных лекций.</li>
+          <li class="rise"><b>Наследие и будущее:</b> исторический облик снаружи и энергоэффективные технологии внутри.</li>
         </ul>
       </div>
       <div class="divider"></div>
@@ -1126,7 +1127,7 @@ function tick(now){
 const gridCanvas = document.getElementById('grid-bg');
 const ctx = gridCanvas.getContext('2d');
 let gridParticles = [];
-const GRID_COUNT = 80; // Чуть меньше частиц, чтобы они не сливались в кашу при увеличении
+const GRID_COUNT = 60; // Чуть меньше частиц, чтобы они не сливались в кашу при увеличении
 const GRID_SPEED = 0.4; // Немного быстрее для динамики
 const CONNECT_DIST = 140; // Увеличили дистанцию соединения
 
@@ -1157,7 +1158,7 @@ function drawGrid() {
   if (isVisible) {
     // Цвета сделали чуть насыщеннее
     ctx.fillStyle = 'rgba(255, 106, 43, 0.8)'; 
-    ctx.strokeStyle = 'rgba(255, 106, 43, 0.8)'; // Использовали warm-soft для линий
+    ctx.strokeStyle = 'rgba(255, 106, 42, 0.6)'; // Использовали warm-soft для линий
     
     gridParticles.forEach(p => {
       p.x += p.vx;
