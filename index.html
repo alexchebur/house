@@ -518,8 +518,12 @@ gesGroup.position.set(0, -4.5, -60);
 gesGroup.visible = false;
 scene.add(gesGroup);
 
-const dam = new THREE.Mesh(new THREE.BoxGeometry(140, 8, 8), new THREE.MeshStandardMaterial({color:C.concrete}));
-dam.position.y = 4; gesGroup.add(dam);
+const dam = new THREE.Mesh(
+  new THREE.BoxGeometry(6, 8, 76),
+  new THREE.MeshStandardMaterial({color:C.concrete})
+);
+dam.position.set(-13, 4, 0);
+gesGroup.add(dam);
 const hall = new THREE.Mesh(new THREE.BoxGeometry(20, 6, 10), new THREE.MeshStandardMaterial({color:0x556677}));
 hall.position.set(0, 3, 6); gesGroup.add(hall);
 const brandBox = new THREE.Mesh(new THREE.BoxGeometry(18, 0.5, 0.5), new THREE.MeshBasicMaterial({color:C.warm}));
