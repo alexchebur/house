@@ -36,7 +36,18 @@
   #endcard h2{font-family:var(--serif);font-weight:400;margin:0;font-size:clamp(30px,8.4vw,74px);letter-spacing:.1em}
   #endcard .rule{width:64px;height:2px;margin:18px auto;background:var(--warm)}
   #endcard p{margin:0;color:var(--ink);font-size:clamp(11px,3vw,14px);letter-spacing:.18em;text-transform:uppercase}
-
+  /* Анимированный фон для финального титра */
+  #grid-bg {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -1; /* Помещаем ПОД текст */
+    opacity: 0;
+    transition: opacity 1.5s ease;
+    pointer-events: none;
+  }
+  #endcard.show #grid-bg {
+    opacity: 0.4; /* Полупрозрачность, чтобы не затмевать текст */
+  }
   #caption{position:absolute;left:calc(24px + var(--sa-l));bottom:calc(96px + var(--sa-b));max-width:min(430px,72vw);padding:14px 16px;border-radius:14px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px) saturate(120%);-webkit-backdrop-filter:blur(10px);opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .5s ease}
   #caption.in{opacity:1;transform:none}
   #caption .k{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--warm-soft)}
@@ -114,6 +125,7 @@
   <div id="brand"><div class="mark">Т+</div><div class="txt"><b>Т Плюс</b>свет · тепло</div></div>
   <div id="prolog"><div class="k">Свердловская область · Урал</div><h1>ВЕРХОТУРЬЕ</h1><p>Деревянный город, который держится на людях</p></div>
   <div id="endcard"><h2>Верхотурская ГЭС</h2><div class="rule"></div><p>Энергия, сохраняющая историю</p></div>
+    <canvas id="grid-bg"></canvas>
   <div id="concepts" aria-label="Две концепции дома">
     <div class="ck rise">Две концепции · один дом</div>
     <div class="pulse rise"></div>
@@ -1091,6 +1103,78 @@ function tick(now){
   requestAnimationFrame(tick);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   ЭНЕРГЕТИЧЕСКАЯ СЕТКА (Фон финального титра)
+   ═══════════════════════════════════════════════════════════════ */
+const gridCanvas = document.getElementById('grid-bg');
+const ctx = gridCanvas.getContext('2d');
+let gridParticles = [];
+const GRID_COUNT = 60; // Количество узлов
+const GRID_SPEED = 0.3; // Скорость дрейфа
+const CONNECT_DIST = 100; // Дистанция соединения линий
+
+function initGrid() {
+  gridCanvas.width = gridCanvas.offsetWidth;
+  gridCanvas.height = gridCanvas.offsetHeight;
+  gridParticles = [];
+  for(let i=0; i<GRID_COUNT; i++) {
+    gridParticles.push({
+      x: Math.random() * gridCanvas.width,
+      y: Math.random() * gridCanvas.height,
+      vx: (Math.random() - 0.5) * GRID_SPEED,
+      vy: (Math.random() - 0.5) * GRID_SPEED,
+      size: Math.random() * 2 + 1
+    });
+  }
+}
+
+function drawGrid() {
+  if(!document.getElementById('endcard').classList.contains('show')) return;
+  
+  ctx.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
+  ctx.fillStyle = 'rgba(255, 106, 43, 0.5)'; // Цвет частиц (warm)
+  ctx.strokeStyle = 'rgba(255, 106, 43, 0.15)'; // Цвет линий
+  
+  // Обновление позиций
+  gridParticles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    
+    // Отскок от краев
+    if(p.x < 0 || p.x > gridCanvas.width) p.vx *= -1;
+    if(p.y < 0 || p.y > gridCanvas.height) p.vy *= -1;
+    
+    // Отрисовка точки
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+    ctx.fill();
+  });
+  
+  // Отрисовка связей
+  for(let i=0; i<gridParticles.length; i++) {
+    for(let j=i+1; j<gridParticles.length; j++) {
+      const dx = gridParticles[i].x - gridParticles[j].x;
+      const dy = gridParticles[i].y - gridParticles[j].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      
+      if(dist < CONNECT_DIST) {
+        ctx.lineWidth = 1 - (dist / CONNECT_DIST);
+        ctx.beginPath();
+        ctx.moveTo(gridParticles[i].x, gridParticles[i].y);
+        ctx.lineTo(gridParticles[j].x, gridParticles[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(drawGrid);
+}
+
+// Инициализация при загрузке и ресайзе
+initGrid();
+addEventListener('resize', initGrid);
+drawGrid(); // Запуск цикла
+
+  
 setPlay(playing); applyTime(time);
 requestAnimationFrame(tick);
 setTimeout(()=>el('load').classList.add('gone'),350);
