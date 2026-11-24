@@ -1126,7 +1126,7 @@ function tick(now){
 const gridCanvas = document.getElementById('grid-bg');
 const ctx = gridCanvas.getContext('2d');
 let gridParticles = [];
-const GRID_COUNT = 50; // Чуть меньше частиц, чтобы они не сливались в кашу при увеличении
+const GRID_COUNT = 80; // Чуть меньше частиц, чтобы они не сливались в кашу при увеличении
 const GRID_SPEED = 0.4; // Немного быстрее для динамики
 const CONNECT_DIST = 140; // Увеличили дистанцию соединения
 
@@ -1144,7 +1144,7 @@ function initGrid() {
       y: Math.random() * gridCanvas.height,
       vx: (Math.random() - 0.5) * GRID_SPEED,
       vy: (Math.random() - 0.5) * GRID_SPEED,
-      size: Math.random() * 3 + 2 // БЫЛО: *2+1. СТАЛО: крупнее (от 2 до 5 пикселей)
+      size: Math.random() * 7 + 3 // БЫЛО: *2+1. СТАЛО: крупнее (от 2 до 5 пикселей)
     });
   }
 }
