@@ -170,25 +170,29 @@ const C = {
   carve:0xf3e6d0, roof:0x4b4640, brick:0x9c5b4a, stone:0x8a8f96, fir:0x2c4a44,
   water:0x1a3b5c, concrete:0x8a9bb0
 };
-const DUR = 68; // было 56; +12с на финальную плашку концепций (CONCEPT_IN/HOLD ниже синхронизированы)
+const DUR = 68;
 const CH = [
-  {t:0.0, k:'Пролог', h:'Верхотурье', p:'Город-заповедник деревянного зодчества.'},
-  {t:3.6, k:'01 · Основание', h:'Камень и место', p:'Фундамент на валунах — связь с уральскими недрами.'},
-  {t:8.6, k:'02 · Сруб', h:'Венцы', p:'Кедр, лиственица, тесло. Два света, простор.'},
-  {t:14.6, k:'03 · Кровля', h:'Пологий скат', p:'Широкая крыша защищает от снега.'},
-  {t:19.6, k:'04 · Резьба', h:'Наличники', p:'Особый орнамент уральских плотников.'},
-  {t:25.0, k:'05 · Тепло', h:'Дом оживает', p:'Свет в окнах, дым над трубой.'},
-  {t:30.2, k:'06 · Толока', h:'Верхотурская толока', p:'Соседи, волонтёры, мастера.'},
-  {t:36.0, k:'07 · Путь', h:'Энергия места', p:'От верстового столба — к сердцу города.'},
-  {t:48.0, k:'Финал', h:'Верхотурская ГЭС', p:'Энергия, сохраняющая историю.'},
-  {t:50.0, k:'08 · Концепции', h:'Два пути одного дома', p:'«Верстовой дом» и «Верхотурская толока».'}
+  {t:0.0,  k:'Пролог',       h:'Верхотурье',          p:'Город-заповедник деревянного зодчества.'},
+  {t:3.6,  k:'01 · Основание', h:'Камень и место',     p:'Фундамент на валунах — связь с уральскими недрами.'},
+  {t:8.6,  k:'02 · Сруб',    h:'Венцы',               p:'Кедр, лиственица, тесло. Два света, простор.'},
+  {t:14.6, k:'03 · Кровля',  h:'Пологий скат',        p:'Широкая крыша защищает от снега.'},
+  {t:19.6, k:'04 · Резьба',  h:'Наличники',           p:'Особый орнамент уральских плотников.'},
+  // ── НОВЫЙ КЕЙФРЕЙМ ──
+  {t:22.0, k:'05 · Инженерия', h:'Энергоэффективность', p:'Тепловой насос, локальная очистка, современные материалы.'},
+  // ── СДВИГ: было 25.0 → 27.0 ──
+  {t:27.0, k:'06 · Тепло',   h:'Дом оживает',         p:'Свет в окнах, дым над трубой.'},
+  {t:32.2, k:'07 · Толока',  h:'Верхотурская толока', p:'Соседи, волонтёры, мастера.'},
+  {t:38.0, k:'08 · Путь',    h:'Энергия места',       p:'От верстового столба — к сердцу города.'},
+  {t:50.0, k:'Финал',        h:'Верхотурская ГЭС',    p:'Энергия, сохраняющая историю.'},
+  {t:60.0, k:'09 · Концепции', h:'Два пути одного дома', p:'«Верстовой дом» и «Верхотурская толока».'}
 ];
+
 /* ── ФИНАЛЬНЫЙ БЛОК: ДВЕ КОНЦЕПЦИИ ───────────────────────────── */
 const CONCEPT_IN   = 60.0;
 const CONCEPT_HOLD = 30.0;
 const CONCEPT_OUT  = CONCEPT_IN + CONCEPT_HOLD;
 const DUR_EXT      = CONCEPT_OUT + 2.0;
-const CONCEPT_CAP_HIDE = CONCEPT_IN + 1.5;
+const CONCEPT_CAP_HIDE = CONCEPT_IN - 1.5;
 
 const Q = new URLSearchParams(location.search);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -708,7 +712,54 @@ const slopeGeo=new THREE.BoxGeometry(SLOPE+.3,.14,D+1.2);
   house.add(towel);
   reveal(towel, 15.4, {dur:.9, mode:'drop', dist:2, ease:E.outCubic});
 }
+/* ═══════════════════════════════════════════════════════════════
+   ИНЖЕНЕРНЫЕ СИСТЕМЫ (кейфрейм 05 · t=22–27)
+   Рентгеновские объекты: просвечивают сквозь дом и землю.
+   Аддитивный блендинг + depthWrite:false = видны сквозь любую геометрию.
+   ═══════════════════════════════════════════════════════════════ */
+const techGhost = new THREE.Group();
+scene.add(techGhost);
 
+// Общий материал «рентгена»: тёплое свечение, аддитивное наложение
+const mTechGhost = new THREE.MeshBasicMaterial({
+  color: C.warm, transparent: true, opacity: 0,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+});
+const mTechGhostSoft = new THREE.MeshBasicMaterial({
+  color: C.warmSoft, transparent: true, opacity: 0,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+});
+
+// 1. ТЕПЛОВОЙ НАСОС: цилиндр под землёй (геотермальный зонд)
+// Дом стоит на y≈0, земля на y≈0. Цилиндр уходит вниз от фундамента.
+const heatPumpGeo = new THREE.CylinderGeometry(0.6, 0.6, 6, 12);
+const heatPump = new THREE.Mesh(heatPumpGeo, mTechGhost);
+heatPump.position.set(2.5, -3.0, 0);   // справа от центра, под полом
+techGhost.add(heatPump);
+
+// Кольцо-индикатор на поверхности (маркер расположения зонда)
+const hpRingGeo = new THREE.RingGeometry(0.7, 0.9, 24);
+const hpRing = new THREE.Mesh(hpRingGeo, mTechGhostSoft);
+hpRing.rotation.x = -Math.PI / 2;
+hpRing.position.set(2.5, 0.05, 0);     // чуть выше земли
+techGhost.add(hpRing);
+
+// 2. ЛОС (локальные очистные сооружения): бокс внутри дома
+// Расположен в углу первого этажа, условно «под лестницей»
+const losGeo = new THREE.BoxGeometry(1.4, 1.0, 1.8);
+const los = new THREE.Mesh(losGeo, mTechGhostSoft);
+los.position.set(-3.0, 0.9, -1.2);     // левый задний угол, на полу 1-го этажа
+techGhost.add(los);
+
+// Труба от ЛОС наружу (визуальная связь с внешней средой)
+const losPipeGeo = new THREE.CylinderGeometry(0.08, 0.08, 4, 8);
+const losPipe = new THREE.Mesh(losPipeGeo, mTechGhost);
+losPipe.rotation.z = Math.PI / 2;
+losPipe.position.set(-3.0, 0.5, -2.8); // горизонтально назад
+techGhost.add(losPipe);
+
+// Собираем все материалы группы для управления opacity
+const techMats = [mTechGhost, mTechGhostSoft];
 /* ЛЮДИ (ТОЛОКА) · ПРАВКА 3: ближе к дому, видны на портретном экране */
 const people=[];
 {
@@ -784,6 +835,28 @@ function applyTime(t){
   lampIn.intensity = w*26; lampOut.intensity = w*10;
   glows.forEach((s,i)=>{ s.material.opacity = w*(.42+.06*Math.sin(t*1.6+i)); });
   mCarve.emissiveIntensity = Math.max(0, 1-Math.abs(t-20.4)/1.6)*.55 + w*.06;
+  // ── ИНЖЕНЕРНЫЕ СИСТЕМЫ: рентгеновское проявление t=22–27 ──
+  // Окно видимости: 22→23 нарастание, 23→26 полная видимость, 26→27 затухание
+  const TECH_T0 = 22.0, TECH_DUR = 5.0;
+  const techLocal = clamp01((t - TECH_T0) / TECH_DUR);
+  // Треугольный профиль: нарастание за первые 20%, спад за последние 20%
+  let techAlpha = 0;
+  if (techLocal > 0 && techLocal < 1) {
+    techAlpha = techLocal < 0.2
+      ? E.outCubic(techLocal / 0.2)
+      : techLocal > 0.8
+        ? E.outCubic((1 - techLocal) / 0.2)
+        : 1.0;
+  }
+  techGhost.visible = techAlpha > 0.001;
+  for (const m of techMats) { m.opacity = techAlpha * 0.7; }
+  // Лёгкое дыхание, пока объекты видны
+  if (techGhost.visible) {
+    const breath = 1.0 + 0.08 * Math.sin(t * 2.5);
+    heatPump.scale.setScalar(breath);
+    hpRing.scale.setScalar(breath);
+    los.scale.setScalar(breath);
+  }
 
   // Небо
   cTop.setHex(C.night.top).lerp(new THREE.Color(C.dusk.top), w*.9);
