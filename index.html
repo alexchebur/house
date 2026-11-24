@@ -31,7 +31,16 @@
   #prolog p{margin:0;color:var(--ink);font-size:clamp(11px,3vw,15px);letter-spacing:.06em}
   #prolog.hide{opacity:0;letter-spacing:.3em}
 
-  #endcard{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;padding:0 24px;opacity:0;transition:opacity 1.5s ease}
+  #endcard {
+    position: absolute;
+    left: 0; right: 0; top: 50%;
+    transform: translateY(-50%);
+    text-align: center;
+    padding: 0 24px;
+    opacity: 0;
+    transition: opacity 1.5s ease;
+    position: relative; /* <--- ДОБАВИТЬ ЭТО */
+  }
   #endcard.show{opacity:1}
   #endcard h2{font-family:var(--serif);font-weight:400;margin:0;font-size:clamp(30px,8.4vw,74px);letter-spacing:.1em}
   #endcard .rule{width:64px;height:2px;margin:18px auto;background:var(--warm)}
@@ -124,8 +133,12 @@
 <div id="ui">
   <div id="brand"><div class="mark">Т+</div><div class="txt"><b>Т Плюс</b>свет · тепло</div></div>
   <div id="prolog"><div class="k">Свердловская область · Урал</div><h1>ВЕРХОТУРЬЕ</h1><p>Деревянный город, который держится на людях</p></div>
-  <div id="endcard"><h2>Верхотурская ГЭС</h2><div class="rule"></div><p>Энергия, сохраняющая историю</p></div>
-    <canvas id="grid-bg"></canvas>
+  <div id="endcard">
+    <canvas id="grid-bg"></canvas> <!-- Canvas теперь ВНУТРИ -->
+    <h2>Верхотурская ГЭС</h2>
+    <div class="rule"></div>
+    <p>Энергия, сохраняющая историю</p>
+  </div>
   <div id="concepts" aria-label="Две концепции дома">
     <div class="ck rise">Две концепции · один дом</div>
     <div class="pulse rise"></div>
