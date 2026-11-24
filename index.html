@@ -718,16 +718,29 @@ const slopeGeo=new THREE.BoxGeometry(SLOPE+.3,.14,D+1.2);
    Аддитивный блендинг + depthWrite:false = видны сквозь любую геометрию.
    ═══════════════════════════════════════════════════════════════ */
 const techGhost = new THREE.Group();
+techGhost.renderOrder = 999;   // ← ДОБАВИТЬ: рендерится после всей сцены
 scene.add(techGhost);
-
+heatPump.renderOrder = 999;
+hpRing.renderOrder = 999;
+los.renderOrder = 999;
+losPipe.renderOrder = 999;
+// если есть wireframe:
+hpWire.renderOrder = 999;
+losWire.renderOrder = 999;
 // Общий материал «рентгена»: тёплое свечение, аддитивное наложение
 const mTechGhost = new THREE.MeshBasicMaterial({
   color: C.warm, transparent: true, opacity: 0,
-  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  depthTest: false,    // ← ДОБАВИТЬ: игнорировать z-buffer полностью
+  side: THREE.DoubleSide
 });
 const mTechGhostSoft = new THREE.MeshBasicMaterial({
   color: C.warmSoft, transparent: true, opacity: 0,
-  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  depthTest: false,    // ← ДОБАВИТЬ
+  side: THREE.DoubleSide
 });
 
 // 1. ТЕПЛОВОЙ НАСОС: увеличен для читаемости
@@ -738,7 +751,7 @@ techGhost.add(heatPump);
 // Wireframe-контур: всегда видим даже сквозь стены
 const hpWire = new THREE.LineSegments(
   new THREE.WireframeGeometry(heatPumpGeo),
-  new THREE.LineBasicMaterial({color:C.warm, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false})
+  new THREE.LineBasicMaterial({color:C.warm, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false, depthTest: false})
 );
 hpWire.position.copy(heatPump.position);
 techGhost.add(hpWire);
@@ -757,7 +770,7 @@ los.position.set(-3.0, 0.7, -1.0);
 techGhost.add(los);
 const losWire = new THREE.LineSegments(
   new THREE.WireframeGeometry(losGeo),
-  new THREE.LineBasicMaterial({color:C.warmSoft, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false})
+  new THREE.LineBasicMaterial({color:C.warmSoft, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false, depthTest: false})
 );
 losWire.position.copy(los.position);
 techGhost.add(losWire);
