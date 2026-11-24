@@ -33,13 +33,17 @@
 
   #endcard {
     position: absolute;
-    left: 0; right: 0; top: 50%;
+    left: 0; 
+    right: 0; 
+    top: 50%;
+    width: 100%;       /* <--- ДОБАВИТЬ: явная ширина */
+    height: 200px;     /* <--- ДОБАВИТЬ: явная высота для canvas */
     transform: translateY(-50%);
     text-align: center;
     padding: 0 24px;
     opacity: 0;
     transition: opacity 1.5s ease;
-    position: relative; /* <--- ДОБАВИТЬ ЭТО */
+    /* position: relative; уже есть выше, но можно продублировать для надежности */
   }
   #endcard.show{opacity:1}
   #endcard h2{font-family:var(--serif);font-weight:400;margin:0;font-size:clamp(30px,8.4vw,74px);letter-spacing:.1em}
