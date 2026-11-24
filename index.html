@@ -1122,13 +1122,18 @@ function tick(now){
 const gridCanvas = document.getElementById('grid-bg');
 const ctx = gridCanvas.getContext('2d');
 let gridParticles = [];
-const GRID_COUNT = 60; // Количество узлов
-const GRID_SPEED = 0.3; // Скорость дрейфа
-const CONNECT_DIST = 100; // Дистанция соединения линий
+const GRID_COUNT = 60; 
+const GRID_SPEED = 0.3; 
+const CONNECT_DIST = 100; 
 
 function initGrid() {
-  gridCanvas.width = gridCanvas.offsetWidth;
-  gridCanvas.height = gridCanvas.offsetHeight;
+  // Важно: берем размеры родителя (#endcard), а не всего окна
+  const parent = document.getElementById('endcard');
+  if (!parent) return;
+  
+  gridCanvas.width = parent.offsetWidth;
+  gridCanvas.height = parent.offsetHeight;
+  
   gridParticles = [];
   for(let i=0; i<GRID_COUNT; i++) {
     gridParticles.push({
@@ -1142,50 +1147,57 @@ function initGrid() {
 }
 
 function drawGrid() {
-  if(!document.getElementById('endcard').classList.contains('show')) return;
-  
+  // Очищаем холст каждый кадр, чтобы не было "шлейфов"
   ctx.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
-  ctx.fillStyle = 'rgba(255, 106, 43, 0.5)'; // Цвет частиц (warm)
-  ctx.strokeStyle = 'rgba(255, 106, 43, 0.15)'; // Цвет линий
   
-  // Обновление позиций
-  gridParticles.forEach(p => {
-    p.x += p.vx;
-    p.y += p.vy;
-    
-    // Отскок от краев
-    if(p.x < 0 || p.x > gridCanvas.width) p.vx *= -1;
-    if(p.y < 0 || p.y > gridCanvas.height) p.vy *= -1;
-    
-    // Отрисовка точки
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-    ctx.fill();
-  });
+  // Проверяем, нужно ли сейчас рисовать сеть
+  const isVisible = document.getElementById('endcard').classList.contains('show');
   
-  // Отрисовка связей
-  for(let i=0; i<gridParticles.length; i++) {
-    for(let j=i+1; j<gridParticles.length; j++) {
-      const dx = gridParticles[i].x - gridParticles[j].x;
-      const dy = gridParticles[i].y - gridParticles[j].y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
+  if (isVisible) {
+    ctx.fillStyle = 'rgba(255, 106, 43, 0.5)'; 
+    ctx.strokeStyle = 'rgba(255, 106, 43, 0.15)'; 
+    
+    // Обновление позиций
+    gridParticles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
       
-      if(dist < CONNECT_DIST) {
-        ctx.lineWidth = 1 - (dist / CONNECT_DIST);
-        ctx.beginPath();
-        ctx.moveTo(gridParticles[i].x, gridParticles[i].y);
-        ctx.lineTo(gridParticles[j].x, gridParticles[j].y);
-        ctx.stroke();
+      if(p.x < 0 || p.x > gridCanvas.width) p.vx *= -1;
+      if(p.y < 0 || p.y > gridCanvas.height) p.vy *= -1;
+      
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+      ctx.fill();
+    });
+    
+    // Отрисовка связей
+    for(let i=0; i<gridParticles.length; i++) {
+      for(let j=i+1; j<gridParticles.length; j++) {
+        const dx = gridParticles[i].x - gridParticles[j].x;
+        const dy = gridParticles[i].y - gridParticles[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        
+        if(dist < CONNECT_DIST) {
+          ctx.lineWidth = 1 - (dist / CONNECT_DIST);
+          ctx.beginPath();
+          ctx.moveTo(gridParticles[i].x, gridParticles[i].y);
+          ctx.lineTo(gridParticles[j].x, gridParticles[j].y);
+          ctx.stroke();
+        }
       }
     }
   }
+  
+  // Запускаем следующий кадр независимо от видимости, 
+  // чтобы анимация "проснулась", когда класс show появится
   requestAnimationFrame(drawGrid);
 }
 
 // Инициализация при загрузке и ресайзе
-initGrid();
-addEventListener('resize', initGrid);
-drawGrid(); // Запуск цикла
+window.addEventListener('resize', initGrid);
+// Небольшая задержка, чтобы DOM точно успел отрендериться перед замером размеров
+setTimeout(initGrid, 100); 
+drawGrid(); 
 
   
 setPlay(playing); applyTime(time);
