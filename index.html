@@ -715,31 +715,27 @@ const slopeGeo=new THREE.BoxGeometry(SLOPE+.3,.14,D+1.2);
 /* ═══════════════════════════════════════════════════════════════
    ИНЖЕНЕРНЫЕ СИСТЕМЫ (кейфрейм 05 · t=22–27)
    Рентгеновские объекты: просвечивают сквозь дом и землю.
-   Аддитивный блендинг + depthWrite:false = видны сквозь любую геометрию.
+   Аддитивный блендинг + depthWrite:false + depthTest:false = видны сквозь любую геометрию.
    ═══════════════════════════════════════════════════════════════ */
 const techGhost = new THREE.Group();
-techGhost.renderOrder = 999;   // ← ДОБАВИТЬ: рендерится после всей сцены
+techGhost.renderOrder = 999;   // Рендерится после всей сцены
 scene.add(techGhost);
-heatPump.renderOrder = 999;
-hpRing.renderOrder = 999;
-los.renderOrder = 999;
-losPipe.renderOrder = 999;
-// если есть wireframe:
-hpWire.renderOrder = 999;
-losWire.renderOrder = 999;
+
 // Общий материал «рентгена»: тёплое свечение, аддитивное наложение
 const mTechGhost = new THREE.MeshBasicMaterial({
   color: C.warm, transparent: true, opacity: 0,
   blending: THREE.AdditiveBlending,
   depthWrite: false,
-  depthTest: false,    // ← ДОБАВИТЬ: игнорировать z-buffer полностью
+  depthTest: false,    // Игнорировать z-buffer полностью
+  fog: false,          // Туман не влияет на яркость свечения
   side: THREE.DoubleSide
 });
 const mTechGhostSoft = new THREE.MeshBasicMaterial({
   color: C.warmSoft, transparent: true, opacity: 0,
   blending: THREE.AdditiveBlending,
   depthWrite: false,
-  depthTest: false,    // ← ДОБАВИТЬ
+  depthTest: false,    // Игнорировать z-buffer полностью
+  fog: false,
   side: THREE.DoubleSide
 });
 
@@ -748,10 +744,17 @@ const heatPumpGeo = new THREE.CylinderGeometry(1.0, 1.0, 8, 16);
 const heatPump = new THREE.Mesh(heatPumpGeo, mTechGhost);
 heatPump.position.set(2.5, -4.0, 0);
 techGhost.add(heatPump);
+
 // Wireframe-контур: всегда видим даже сквозь стены
 const hpWire = new THREE.LineSegments(
   new THREE.WireframeGeometry(heatPumpGeo),
-  new THREE.LineBasicMaterial({color:C.warm, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false, depthTest: false})
+  new THREE.LineBasicMaterial({
+    color: C.warm, transparent: true, opacity: 0, 
+    blending: THREE.AdditiveBlending, 
+    depthWrite: false, 
+    depthTest: false,
+    fog: false
+  })
 );
 hpWire.position.copy(heatPump.position);
 techGhost.add(hpWire);
@@ -768,9 +771,16 @@ const losGeo = new THREE.BoxGeometry(2.0, 1.4, 2.4);
 const los = new THREE.Mesh(losGeo, mTechGhostSoft);
 los.position.set(-3.0, 0.7, -1.0);
 techGhost.add(los);
+
 const losWire = new THREE.LineSegments(
   new THREE.WireframeGeometry(losGeo),
-  new THREE.LineBasicMaterial({color:C.warmSoft, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false, depthTest: false})
+  new THREE.LineBasicMaterial({
+    color: C.warmSoft, transparent: true, opacity: 0, 
+    blending: THREE.AdditiveBlending, 
+    depthWrite: false, 
+    depthTest: false,
+    fog: false
+  })
 );
 losWire.position.copy(los.position);
 techGhost.add(losWire);
@@ -782,7 +792,15 @@ losPipe.rotation.z = Math.PI / 2;
 losPipe.position.set(-3.0, 0.5, -3.0);
 techGhost.add(losPipe);
 
-// Собираем ВСЕ материалы (включая wireframe)
+// ── Назначаем renderOrder всем объектам ПОСЛЕ их создания ──
+heatPump.renderOrder = 999;
+hpRing.renderOrder = 999;
+los.renderOrder = 999;
+losPipe.renderOrder = 999;
+hpWire.renderOrder = 999;
+losWire.renderOrder = 999;
+
+// Собираем ВСЕ материалы (включая wireframe) для управления прозрачностью
 const techMats = [mTechGhost, mTechGhostSoft, hpWire.material, losWire.material];
   
 /* ЛЮДИ (ТОЛОКА) · ПРАВКА 3: ближе к дому, видны на портретном экране */
