@@ -730,36 +730,48 @@ const mTechGhostSoft = new THREE.MeshBasicMaterial({
   blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
 });
 
-// 1. ТЕПЛОВОЙ НАСОС: цилиндр под землёй (геотермальный зонд)
-// Дом стоит на y≈0, земля на y≈0. Цилиндр уходит вниз от фундамента.
-const heatPumpGeo = new THREE.CylinderGeometry(0.6, 0.6, 6, 12);
+// 1. ТЕПЛОВОЙ НАСОС: увеличен для читаемости
+const heatPumpGeo = new THREE.CylinderGeometry(1.0, 1.0, 8, 16);
 const heatPump = new THREE.Mesh(heatPumpGeo, mTechGhost);
-heatPump.position.set(2.5, -3.0, 0);   // справа от центра, под полом
+heatPump.position.set(2.5, -4.0, 0);
 techGhost.add(heatPump);
+// Wireframe-контур: всегда видим даже сквозь стены
+const hpWire = new THREE.LineSegments(
+  new THREE.WireframeGeometry(heatPumpGeo),
+  new THREE.LineBasicMaterial({color:C.warm, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false})
+);
+hpWire.position.copy(heatPump.position);
+techGhost.add(hpWire);
 
-// Кольцо-индикатор на поверхности (маркер расположения зонда)
-const hpRingGeo = new THREE.RingGeometry(0.7, 0.9, 24);
+// Кольцо-индикатор увеличено
+const hpRingGeo = new THREE.RingGeometry(1.2, 1.5, 32);
 const hpRing = new THREE.Mesh(hpRingGeo, mTechGhostSoft);
 hpRing.rotation.x = -Math.PI / 2;
-hpRing.position.set(2.5, 0.05, 0);     // чуть выше земли
+hpRing.position.set(2.5, 0.05, 0);
 techGhost.add(hpRing);
 
-// 2. ЛОС (локальные очистные сооружения): бокс внутри дома
-// Расположен в углу первого этажа, условно «под лестницей»
-const losGeo = new THREE.BoxGeometry(1.4, 1.0, 1.8);
+// 2. ЛОС: увеличен
+const losGeo = new THREE.BoxGeometry(2.0, 1.4, 2.4);
 const los = new THREE.Mesh(losGeo, mTechGhostSoft);
-los.position.set(-3.0, 0.9, -1.2);     // левый задний угол, на полу 1-го этажа
+los.position.set(-3.0, 0.7, -1.0);
 techGhost.add(los);
+const losWire = new THREE.LineSegments(
+  new THREE.WireframeGeometry(losGeo),
+  new THREE.LineBasicMaterial({color:C.warmSoft, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false})
+);
+losWire.position.copy(los.position);
+techGhost.add(losWire);
 
-// Труба от ЛОС наружу (визуальная связь с внешней средой)
-const losPipeGeo = new THREE.CylinderGeometry(0.08, 0.08, 4, 8);
+// Труба от ЛОС
+const losPipeGeo = new THREE.CylinderGeometry(0.12, 0.12, 5, 8);
 const losPipe = new THREE.Mesh(losPipeGeo, mTechGhost);
 losPipe.rotation.z = Math.PI / 2;
-losPipe.position.set(-3.0, 0.5, -2.8); // горизонтально назад
+losPipe.position.set(-3.0, 0.5, -3.0);
 techGhost.add(losPipe);
 
-// Собираем все материалы группы для управления opacity
-const techMats = [mTechGhost, mTechGhostSoft];
+// Собираем ВСЕ материалы (включая wireframe)
+const techMats = [mTechGhost, mTechGhostSoft, hpWire.material, losWire.material];
+  
 /* ЛЮДИ (ТОЛОКА) · ПРАВКА 3: ближе к дому, видны на портретном экране */
 const people=[];
 {
@@ -795,6 +807,8 @@ const SHOTS=[
   {t:0,    p:[0, 6.2, 33],   l:[0, 4.2, 0],   f:44},   // пролог: дом + столб на переднем плане
   {t:8.6,  p:[16, 9.0, 22],  l:[0, 4.4, 0],   f:42},   // сруб: было (14,8,14.5) → отодвинуто
   {t:19.6, p:[7.5, 5.6, 25], l:[0, 4.6, 1.0], f:40},   // резьба: было (4.2,4,11.6) → дом почти целиком
+  {t:22.5, p:[6, 2.5, 14],   l:[0, 0.5, 0],   f:48},
+  {t:30.2, p:[0, 10.5, 26],  l:[0, 3.6, 2.0], f:42},  
   {t:30.2, p:[0, 10.5, 26],  l:[0, 3.6, 2.0], f:42},   // толока: люди у фасада в кадре
   {t:36,   p:[6, 9, 18],     l:[0, 4, -2],    f:46},
   {t:42,   p:[10, 7, -18],   l:[0, 2, -32],   f:44},
