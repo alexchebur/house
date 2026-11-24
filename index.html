@@ -1127,7 +1127,7 @@ const GRID_SPEED = 0.3;
 const CONNECT_DIST = 100; 
 
 function initGrid() {
-  // Важно: берем размеры родителя (#endcard), а не всего окна
+  // Берем размеры родителя (#endcard), чтобы canvas занимал ровно его площадь
   const parent = document.getElementById('endcard');
   if (!parent) return;
   
@@ -1147,10 +1147,10 @@ function initGrid() {
 }
 
 function drawGrid() {
-  // Очищаем холст каждый кадр, чтобы не было "шлейфов"
+  // Очищаем холст каждый кадр, чтобы не было "шлейфов" от предыдущих кадров
   ctx.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
   
-  // Проверяем, нужно ли сейчас рисовать сеть
+  // Проверяем видимость титра
   const isVisible = document.getElementById('endcard').classList.contains('show');
   
   if (isVisible) {
@@ -1188,14 +1188,14 @@ function drawGrid() {
     }
   }
   
-  // Запускаем следующий кадр независимо от видимости, 
-  // чтобы анимация "проснулась", когда класс show появится
+  // ВАЖНО: Запускаем следующий кадр НЕЗАВИСИМО от видимости.
+  // Это позволяет анимации "проснуться", когда на 50-й секунде появится класс show.
   requestAnimationFrame(drawGrid);
 }
 
 // Инициализация при загрузке и ресайзе
 window.addEventListener('resize', initGrid);
-// Небольшая задержка, чтобы DOM точно успел отрендериться перед замером размеров
+// Небольшая задержка, чтобы DOM успел отрендериться и мы получили правильные размеры #endcard
 setTimeout(initGrid, 100); 
 drawGrid(); 
 
