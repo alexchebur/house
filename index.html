@@ -832,6 +832,64 @@ losWire.renderOrder = 999;
 
 // Собираем ВСЕ материалы (включая wireframe) для управления прозрачностью
 const techMats = [mTechGhost, mTechGhostSoft, hpWire.material, losWire.material];
+
+
+/* ═══════════════════════════════════════════════════════════════
+   БЛАГОУСТРОЙСТВО ТЕРРИТОРИИ (кейфрейм t=28–31)
+   Сетка участка и малые архитектурные формы (МАФ).
+   Использует тот же «рентгеновский» материал, что и инженерия.
+   ═══════════════════════════════════════════════════════════════ */
+const landscapeGhost = new THREE.Group();
+landscapeGhost.renderOrder = 999; // Рендер поверх всего
+scene.add(landscapeGhost);
+
+// 1. СЕТКА УЧАСТКА (Wireframe прямоугольник под домом)
+// Размер ~16x16 метров, чуть больше самого дома
+const plotGeo = new THREE.PlaneGeometry(16, 16, 8, 8); 
+const plotMesh = new THREE.Mesh(plotGeo, mTechGhostSoft); // Используем мягкий оранжевый
+plotMesh.rotation.x = -Math.PI / 2; // Кладем на землю
+plotMesh.position.y = 0.05; // Чуть выше уровня земли, чтобы не мерцало с ней
+landscapeGhost.add(plotMesh);
+
+// Добавляем wireframe-линии для четкости сетки
+const plotWire = new THREE.LineSegments(
+  new THREE.WireframeGeometry(plotGeo),
+  new THREE.LineBasicMaterial({
+    color: C.warm, transparent: true, opacity: 0,
+    blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, fog: false
+  })
+);
+plotWire.rotation.x = -Math.PI / 2;
+plotWire.position.y = 0.05;
+landscapeGhost.add(plotWire);
+
+// 2. МАЛЫЕ АРХИТЕКТУРНЫЕ ФОРМЫ (Скамейки и кубы)
+// Материал берем из инженерии, чтобы они светились так же
+const mafMat = mTechGhost; 
+
+// Скамейка 1 (вытянутый параллелепипед)
+const bench1 = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.45, 0.5), mafMat);
+bench1.position.set(4.5, 0.25, 2.0); // Справа спереди от дома
+landscapeGhost.add(bench1);
+
+// Скамейка 2
+const bench2 = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.45, 0.5), mafMat);
+bench2.position.set(-4.5, 0.25, 2.0); // Слева спереди
+landscapeGhost.add(bench2);
+
+// Декоративный куб 1
+const cube1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), mafMat);
+cube1.position.set(5.0, 0.4, -3.0); // Справа сзади
+landscapeGhost.add(cube1);
+
+// Декоративный куб 2
+const cube2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), mafMat);
+cube2.position.set(-5.0, 0.3, -4.0); // Слева сзади, чуть меньше
+landscapeGhost.add(cube2);
+
+// Собираем материалы ландшафта для управления прозрачностью
+const landscapeMats = [mTechGhostSoft, plotWire.material];
+
   
 /* ЛЮДИ (ТОЛОКА) · ПРАВКА 3: ближе к дому, видны на портретном экране */
 const people=[];
@@ -932,7 +990,27 @@ function applyTime(t){
     hpRing.scale.setScalar(breath);
     los.scale.setScalar(breath);
   }
-
+  // ── БЛАГОУСТРОЙСТВО: проявление сетки и МАФ t=28–31 ──
+  // Появляется после того, как дом "ожил" (t=27), и исчезает перед "Толокой" (t=32.2)
+  const LAND_T0 = 28.0, LAND_DUR = 3.5;
+  const landLocal = clamp01((t - LAND_T0) / LAND_DUR);
+  
+  // Профиль: плавное появление и такое же плавное исчезновение
+  let landAlpha = 0;
+  if (landLocal > 0 && landLocal < 1) {
+    // Используем синусоиду для плавного колокола (0 -> 1 -> 0)
+    landAlpha = Math.sin(landLocal * Math.PI); 
+  }
+  
+  landscapeGhost.visible = landAlpha > 0.001;
+  for (const m of landscapeMats) { m.opacity = landAlpha * 0.6; }
+  
+  // Легкая пульсация сетки, пока она видна
+  if (landscapeGhost.visible) {
+    const pulse = 1.0 + 0.05 * Math.sin(t * 3.0);
+    plotMesh.scale.setScalar(pulse);
+    plotWire.scale.setScalar(pulse);
+  }
   // Небо
   cTop.setHex(C.night.top).lerp(new THREE.Color(C.dusk.top), w*.9);
   cBot.setHex(C.night.bot).lerp(new THREE.Color(C.dusk.bot), w*.75);
