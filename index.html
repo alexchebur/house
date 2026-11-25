@@ -844,8 +844,8 @@ landscapeGhost.renderOrder = 999; // Рендер поверх всего
 scene.add(landscapeGhost);
 
 // 1. СЕТКА УЧАСТКА (Wireframe прямоугольник под домом)
-// Размер ~16x16 метров, чуть больше самого дома
-const plotGeo = new THREE.PlaneGeometry(16, 16, 8, 8); 
+// УВЕЛИЧЕНО: Размер 24x24 метра для охвата большей территории
+const plotGeo = new THREE.PlaneGeometry(24, 24, 12, 12); 
 const plotMesh = new THREE.Mesh(plotGeo, mTechGhostSoft); // Используем мягкий оранжевый
 plotMesh.rotation.x = -Math.PI / 2; // Кладем на землю
 plotMesh.position.y = 0.05; // Чуть выше уровня земли, чтобы не мерцало с ней
@@ -869,26 +869,26 @@ const mafMat = mTechGhost;
 
 // Скамейка 1 (вытянутый параллелепипед)
 const bench1 = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.45, 0.5), mafMat);
-bench1.position.set(4.5, 0.25, 2.0); // Справа спереди от дома
+bench1.position.set(6.0, 0.25, 3.0); // Справа спереди от дома (чуть дальше из-за увеличения сетки)
 landscapeGhost.add(bench1);
 
 // Скамейка 2
 const bench2 = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.45, 0.5), mafMat);
-bench2.position.set(-4.5, 0.25, 2.0); // Слева спереди
+bench2.position.set(-6.0, 0.25, 3.0); // Слева спереди
 landscapeGhost.add(bench2);
 
 // Декоративный куб 1
 const cube1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), mafMat);
-cube1.position.set(5.0, 0.4, -3.0); // Справа сзади
+cube1.position.set(7.0, 0.4, -4.0); // Справа сзади
 landscapeGhost.add(cube1);
 
 // Декоративный куб 2
 const cube2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), mafMat);
-cube2.position.set(-5.0, 0.3, -4.0); // Слева сзади, чуть меньше
+cube2.position.set(-7.0, 0.3, -5.0); // Слева сзади, чуть меньше
 landscapeGhost.add(cube2);
 
-// Собираем материалы ландшафта для управления прозрачностью
-const landscapeMats = [mTechGhostSoft, plotWire.material];
+// ИСПРАВЛЕНО: Собираем ВСЕ материалы, включая mafMat, иначе скамейки будут невидимы
+const landscapeMats = [mTechGhostSoft, plotWire.material, mafMat];
 
   
 /* ЛЮДИ (ТОЛОКА) · ПРАВКА 3: ближе к дому, видны на портретном экране */
